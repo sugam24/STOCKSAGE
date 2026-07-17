@@ -37,6 +37,7 @@ wheels/
 .coverage
 htmlcov/
 .tox/
+useless.txt
 
 # IDE and Editor
 .vscode/
