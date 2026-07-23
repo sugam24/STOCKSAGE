@@ -5,7 +5,7 @@ Implements a persistent, multi-turn conversational loop against the Gemini
 API with a strict financial-research persona enforced via a system instruction.
 
 Usage:
-    uv run python chat.py
+    uv run python -m src.chat
 
 Type "quit" or "exit" to end the session.
 """
