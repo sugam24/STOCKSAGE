@@ -5,6 +5,7 @@ requires-python = ">=3.12"
 dependencies = [
     "google-genai>=2.12.1",
     "pydantic-settings>=2.14.2",
+    "yfinance>=1.5.2",
 ]
 
 [tool.pytest.ini_options]
