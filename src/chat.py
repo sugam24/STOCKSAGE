@@ -1,8 +1,8 @@
 """
 StockSage — Day 3: Multi-Turn CLI Chat Interface
 =================================================
-Implements a persistent, multi-turn conversational loop against the Gemini
-API with a strict financial-research persona enforced via a system instruction.
+Implements a persistent, multi-turn conversational loop against the Groq
+API with a strict financial-research persona enforced via a system message.
 
 Usage:
     uv run python -m src.chat
@@ -12,8 +12,7 @@ Type "quit" or "exit" to end the session.
 
 import os
 import sys
-from google import genai
-from google.genai import types
+from groq import Groq
 from dotenv import load_dotenv
 
 # ---------------------------------------------------------------------------
@@ -24,7 +23,7 @@ load_dotenv()
 # ---------------------------------------------------------------------------
 # Model Configuration
 # ---------------------------------------------------------------------------
-MODEL = "gemini-2.0-flash"
+MODEL = "llama-3.3-70b-versatile"
 
 # ---------------------------------------------------------------------------
 # SYSTEM_INSTRUCTION
@@ -76,15 +75,18 @@ Prior turns may be referenced to give coherent, non-repetitive answers.
 # Chat Entry Point
 # ---------------------------------------------------------------------------
 def main() -> None:
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
-        print("[ERROR] GEMINI_API_KEY is not set. Check your .env file.")
+        print("[ERROR] GROQ_API_KEY is not set. Check your .env file.")
         sys.exit(1)
 
-    client = genai.Client(api_key=api_key)
+    client = Groq(api_key=api_key)
 
-    # Strongly-typed conversation history — persists for the entire session.
-    history: list[types.Content] = []
+    # Conversation history — persists for the entire session.
+    # Groq uses the OpenAI message format: list of dicts with role/content.
+    history: list[dict] = [
+        {"role": "system", "content": SYSTEM_INSTRUCTION},
+    ]
 
     print("=" * 60)
     print("  StockSage  |  Financial Research Assistant  |  Day 3")
@@ -108,26 +110,18 @@ def main() -> None:
                   "Market insights await on the next session.")
             break
 
-        # ── Append user turn to history (strongly typed) ────────────────────
-        history.append(
-            types.Content(
-                role="user",
-                parts=[types.Part.from_text(text=raw)],
-            )
-        )
+        # ── Append user turn to history ─────────────────────────────────────
+        history.append({"role": "user", "content": raw})
 
-        # ── Call the Gemini API ──────────────────────────────────────────────
+        # ── Call the Groq API ───────────────────────────────────────────────
         try:
-            response = client.models.generate_content(
+            response = client.chat.completions.create(  # type: ignore[arg-type]
                 model=MODEL,
-                contents=history,
-                config=types.GenerateContentConfig(
-                    system_instruction=SYSTEM_INSTRUCTION,
-                    max_output_tokens=1024,
-                    temperature=0.4,       # controlled, professional outputs
-                ),
+                messages=history,
+                max_tokens=1024,
+                temperature=0.4,       # controlled, professional outputs
             )
-            reply_text: str = response.text
+            reply_text: str = response.choices[0].message.content or ""
 
         except Exception as exc:
             print(f"\n[API ERROR] {exc}\n")
@@ -135,13 +129,8 @@ def main() -> None:
             history.pop()
             continue
 
-        # ── Append model turn to history (strongly typed) ───────────────────
-        history.append(
-            types.Content(
-                role="model",
-                parts=[types.Part.from_text(text=reply_text)],
-            )
-        )
+        # ── Append model turn to history ────────────────────────────────────
+        history.append({"role": "assistant", "content": reply_text})
 
         # ── Display response ─────────────────────────────────────────────────
         print(f"\nStockSage: {reply_text}\n")

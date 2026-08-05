@@ -1,18 +1,19 @@
 """
 tests/test_structured.py
 ------------------------
-Day 5: Tests for core/structured.py
+Day 5: Tests for core/structured.py (Groq-backed)
 
 Coverage:
-  • _make_function_declaration() produces a correctly-shaped FunctionDeclaration.
-  • _convert_property() maps JSON-schema types to uppercase Gemini types.
+  • _make_function_declaration() produces a correctly-shaped OpenAI/Groq tool dict.
+  • _convert_property() passes through lowercase JSON Schema types.
   • extract() returns a validated StockData instance for 3 distinct paragraphs
-    (live Gemini calls; requires GEMINI_API_KEY in the environment).
-  • extract() raises ValueError when Gemini returns no function call (mocked).
+    (live Groq calls; requires GROQ_API_KEY in the environment).
+  • extract() raises ValueError when Groq returns no function call (mocked).
 """
 
 from __future__ import annotations
 
+import json
 import pytest
 from pydantic import ValidationError
 from unittest.mock import MagicMock, patch
@@ -31,22 +32,22 @@ from core.structured import (
 
 
 class TestConvertProperty:
-    """_convert_property() must map JSON Schema types → Gemini uppercase types."""
+    """_convert_property() must pass through standard JSON Schema types."""
 
     def test_string_type(self):
-        assert _convert_property({"type": "string"})["type"] == "STRING"
+        assert _convert_property({"type": "string"})["type"] == "string"
 
     def test_number_type(self):
-        assert _convert_property({"type": "number"})["type"] == "NUMBER"
+        assert _convert_property({"type": "number"})["type"] == "number"
 
     def test_integer_type(self):
-        assert _convert_property({"type": "integer"})["type"] == "INTEGER"
+        assert _convert_property({"type": "integer"})["type"] == "integer"
 
     def test_boolean_type(self):
-        assert _convert_property({"type": "boolean"})["type"] == "BOOLEAN"
+        assert _convert_property({"type": "boolean"})["type"] == "boolean"
 
-    def test_unknown_type_falls_back_to_string(self):
-        assert _convert_property({"type": "exotic"})["type"] == "STRING"
+    def test_unknown_type_passed_through(self):
+        assert _convert_property({"type": "exotic"})["type"] == "exotic"
 
     def test_description_is_forwarded(self):
         prop = {"type": "number", "description": "Stock price in USD"}
@@ -60,55 +61,54 @@ class TestConvertProperty:
 
 
 class TestMakeFunctionDeclaration:
-    """_make_function_declaration() must produce a valid FunctionDeclaration."""
+    """_make_function_declaration() must produce a valid OpenAI/Groq tool dict."""
 
     def test_name_matches_model_title(self):
         decl = _make_function_declaration(StockData)
-        assert decl.name == "StockData"
+        assert decl["function"]["name"] == "StockData"
 
     def test_parameters_has_required_fields(self):
-        # parameters is a google.genai.types.Schema object — use attribute access
         decl = _make_function_declaration(StockData)
-        required = decl.parameters.required
+        required = decl["function"]["parameters"]["required"]
         assert "ticker" in required
         assert "price" in required
         assert "pe_ratio" in required
 
     def test_properties_have_correct_types(self):
         decl = _make_function_declaration(StockData)
-        props = decl.parameters.properties  # dict[str, Schema]
-        # Schema.type is a Type enum; .value gives the uppercase string
-        assert props["ticker"].type.value == "STRING"
-        assert props["price"].type.value == "NUMBER"
-        assert props["pe_ratio"].type.value == "NUMBER"
+        props = decl["function"]["parameters"]["properties"]
+        assert props["ticker"]["type"] == "string"
+        assert props["price"]["type"] == "number"
+        assert props["pe_ratio"]["type"] == "number"
 
     def test_parameters_type_is_object(self):
         decl = _make_function_declaration(StockData)
-        assert decl.parameters.type.value == "OBJECT"
+        assert decl["function"]["parameters"]["type"] == "object"
+
+    def test_top_level_type_is_function(self):
+        decl = _make_function_declaration(StockData)
+        assert decl["type"] == "function"
 
 
 class TestExtractMocked:
     """extract() error path – mocked so no network call is made."""
 
     def test_raises_value_error_when_no_function_call(self):
-        """If Gemini returns only text, extract() must raise ValueError."""
-        # Build a minimal fake response with no function_call parts
-        mock_part = MagicMock()
-        mock_part.function_call = None
+        """If Groq returns only text, extract() must raise ValueError."""
+        # Build a minimal mock response with no tool_calls
+        mock_msg = MagicMock()
+        mock_msg.tool_calls = None
+        mock_msg.content = "Sorry, I cannot extract that."
 
-        mock_content = MagicMock()
-        mock_content.parts = [mock_part]
-
-        mock_candidate = MagicMock()
-        mock_candidate.content = mock_content
+        mock_choice = MagicMock()
+        mock_choice.message = mock_msg
 
         mock_response = MagicMock()
-        mock_response.candidates = [mock_candidate]
-        mock_response.text = "Sorry, I cannot extract that."
+        mock_response.choices = [mock_choice]
 
         with patch("core.structured._get_client") as mock_get_client:
             mock_client = MagicMock()
-            mock_client.models.generate_content.return_value = mock_response
+            mock_client.chat.completions.create.return_value = mock_response
             mock_get_client.return_value = mock_client
 
             with pytest.raises(ValueError, match="did not return a function call"):
@@ -116,7 +116,7 @@ class TestExtractMocked:
 
 
 # ===========================================================================
-# Integration tests – live Gemini API (skipped if key missing)
+# Integration tests – live Groq API (skipped if key missing)
 # ===========================================================================
 
 # Mark the entire class as "integration" so they can be excluded via:
@@ -127,9 +127,9 @@ pytestmark_integration = pytest.mark.integration
 @pytest.mark.integration
 class TestExtractLive:
     """
-    Live end-to-end extraction tests against the real Gemini API.
+    Live end-to-end extraction tests against the real Groq API.
 
-    These tests require GEMINI_API_KEY to be set in the environment or .env.
+    These tests require GROQ_API_KEY to be set in the environment or .env.
     Skip them in CI by running:  pytest -m "not integration"
     """
 

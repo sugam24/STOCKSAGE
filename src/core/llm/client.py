@@ -1,54 +1,63 @@
 import os
-from google import genai
+from groq import Groq
 from dotenv import load_dotenv
 
 # Load environment variables from the .env file
 load_dotenv()
 
-def get_claude_response(prompt: str, system_prompt: str = "You are a helpful financial assistant.") -> str:
-    """
-    Sends a single prompt to Google Gemini using the official Google GenAI SDK.
-    Note: We keep the function name 'get_claude_response' or make a generic helper so
-    we don't have to break downstream code references as we swap models.
-    """
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise ValueError("GEMINI_API_KEY is not set in the environment variables.")
+MODEL = "llama-3.3-70b-versatile"
 
-    # Initialize Gemini Client (automatically configures with GEMINI_API_KEY)
-    client = genai.Client(api_key=api_key)
+
+def get_llm_response(prompt: str, system_prompt: str = "You are a helpful financial assistant.") -> str:
+    """
+    Sends a single prompt to Groq using the official Groq SDK.
+
+    Args:
+        prompt:        The user's question or instruction.
+        system_prompt: System-level instruction for the model persona.
+
+    Returns:
+        The model's text response.
+
+    Raises:
+        ValueError: If GROQ_API_KEY is not set.
+    """
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("GROQ_API_KEY is not set in the environment variables.")
+
+    client = Groq(api_key=api_key)
 
     try:
-        # Request a response using the highly efficient gemini-3.5-flash
-        response = client.models.generate_content(
-            model='gemini-3.5-flash',
-            contents=prompt,
-            config={
-                'system_instruction': system_prompt,
-                'max_output_tokens': 1000
-            }
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt},
+            ],
+            max_tokens=1000,
         )
 
-        # Print usage metrics for your Day 2 deliverable tracking
-        if response.usage_metadata:
+        # Print usage metrics for Day 2 deliverable tracking
+        if response.usage:
             print("\n--- Usage Metadata ---")
-            print(f"Input Tokens:  {response.usage_metadata.prompt_token_count}")
-            print(f"Output Tokens: {response.usage_metadata.candidates_token_count}")
+            print(f"Input Tokens:  {response.usage.prompt_tokens}")
+            print(f"Output Tokens: {response.usage.completion_tokens}")
             print("-----------------------\n")
 
-        return response.text
+        return response.choices[0].message.content or ""
 
     except Exception as e:
-        print(f"An error occurred while calling the Gemini API: {e}")
+        print(f"An error occurred while calling the Groq API: {e}")
         raise e
 
 if __name__ == "__main__":
     # Test block to verify execution
     test_prompt = "What is a stock split, and how does it affect a retail investor?"
-    print(f"Sending prompt to Gemini: '{test_prompt}'...")
+    print(f"Sending prompt to Groq: '{test_prompt}'...")
     try:
-        reply = get_claude_response(test_prompt)
-        print("Gemini's Response:")
+        reply = get_llm_response(test_prompt)
+        print("Groq's Response:")
         print(reply)
     except Exception as e:
         print(f"Failed to get response: {e}")

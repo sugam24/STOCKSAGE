@@ -3,7 +3,7 @@ name = "stocksage"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
-    "google-genai>=2.12.1",
+    "groq>=1.6.0",
     "pydantic-settings>=2.14.2",
     "yfinance>=1.5.2",
 ]
@@ -13,6 +13,12 @@ pythonpath = ["src"]
 markers = [
     "integration: marks tests that make live API calls (deselect with '-m not integration')",
 ]
+
+[tool.pyright]
+pythonVersion = "3.12"
+venvPath = "."
+venv = ".venv"
+extraPaths = ["."]
 
 [dependency-groups]
 dev = [
