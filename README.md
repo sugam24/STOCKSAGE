@@ -106,8 +106,8 @@ StockSage/
 
 ```bash
 # Clone the repository
-git clone https://github.com/<your-username>/StockSage.git
-cd StockSage
+git clone https://github.com/sugam24/STOCKSAGE.git
+cd STOCKSAGE
 
 # Create and activate a virtual environment (uv handles this automatically)
 uv sync
