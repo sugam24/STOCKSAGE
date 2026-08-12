@@ -29,23 +29,41 @@ def get_llm_response(prompt: str, system_prompt: str = "You are a helpful financ
     client = Groq(api_key=api_key)
 
     try:
-        response = client.chat.completions.create(
+        stream = client.chat.completions.create(
             model=MODEL,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},
             ],
             max_tokens=1000,
+            stream=True,
         )
 
-        # Print usage metrics for Day 2 deliverable tracking
-        if response.usage:
-            print("\n--- Usage Metadata ---")
-            print(f"Input Tokens:  {response.usage.prompt_tokens}")
-            print(f"Output Tokens: {response.usage.completion_tokens}")
+        parts: list[str] = []
+        usage = None
+
+        for chunk in stream:
+            if chunk.usage:
+                usage = chunk.usage
+
+            if not chunk.choices:
+                continue
+
+            delta = chunk.choices[0].delta.content
+            if delta:
+                print(delta, end="", flush=True)
+                parts.append(delta)
+
+        full_response = "".join(parts)
+
+        # Print usage metadata after the stream completes
+        if usage:
+            print("\n\n--- Usage Metadata ---")
+            print(f"Input Tokens:  {usage.prompt_tokens}")
+            print(f"Output Tokens: {usage.completion_tokens}")
             print("-----------------------\n")
 
-        return response.choices[0].message.content or ""
+        return full_response
 
     except Exception as e:
         print(f"An error occurred while calling the Groq API: {e}")
@@ -56,8 +74,8 @@ if __name__ == "__main__":
     test_prompt = "What is a stock split, and how does it affect a retail investor?"
     print(f"Sending prompt to Groq: '{test_prompt}'...")
     try:
+        print("Groq's Response:\n")
         reply = get_llm_response(test_prompt)
-        print("Groq's Response:")
-        print(reply)
+        print(f"\n\n[Accumulated {len(reply)} characters]")
     except Exception as e:
         print(f"Failed to get response: {e}")
