@@ -10,6 +10,10 @@ Steps covered:
       score higher.
   88. ``embed(texts: list[str]) -> list[list[float]]`` — production function.
 
+all-MiniLM-L6-v2 is one of the most famous, widely used, and efficient pre-trained 
+Sentence Transformer models available on Hugging Face. It achieves very strong 
+performance on semantic similarity tasks while remaining relatively small and fast. 
+
 Model : all-MiniLM-L6-v2  (384 dimensions, ~80 MB, CPU-friendly)
 
 Usage:
