@@ -4,6 +4,9 @@ venv/
 env/
 ENV/
 
+# Local vector DB / model caches (RAG)
+data/
+
 # Environment variables
 .env
 .env.local
