@@ -52,13 +52,20 @@ def _parse_published_date(raw: str | None) -> datetime | None:
         return None
 
 
-def search_news(ticker: str, *, max_results: int = 10) -> list[dict]:
+def search_news(
+    ticker: str,
+    *,
+    max_results: int = 10,
+    include_raw_content: bool = False,
+) -> list[dict]:
     """
     Search Tavily for recent news about *ticker*.
 
     Args:
         ticker: Stock symbol (case-insensitive; normalised internally).
         max_results: Maximum number of results to request from Tavily.
+        include_raw_content: If True, each result also carries ``raw_content``
+            (the full parsed article text) — used by the RAG chunker (Day 20).
 
     Returns:
         List of raw result dicts (title, url, content, published_date, …).
@@ -74,6 +81,7 @@ def search_news(ticker: str, *, max_results: int = 10) -> list[dict]:
         topic="news",
         search_depth="basic",
         max_results=max_results,
+        include_raw_content=include_raw_content,
     )
     return response.get("results", [])
 
