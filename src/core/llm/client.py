@@ -14,7 +14,9 @@ from groq.types.chat import ChatCompletionMessageParam
 
 load_dotenv()
 
-MODEL = "llama-3.3-70b-versatile"
+# llama-3.3-70b-versatile was retired by Groq (404 model_not_found).
+# Override with GROQ_MODEL in .env if needed.
+MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 MAX_ATTEMPTS = 3
 INITIAL_WAIT_SECONDS = 2
 
