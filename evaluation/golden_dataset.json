@@ -1,0 +1,183 @@
+[
+  {
+    "id": "q01",
+    "ticker": "NVDA",
+    "question": "What was NVIDIA's total revenue and Data Center revenue for the second quarter of fiscal 2027?",
+    "expected_source": "filings",
+    "expected_answer": "Total revenue was $96.22 billion ($96,221 million), up 106% year-over-year, and Data Center revenue was $89.02 billion ($89,023 million), up 117% year-over-year.",
+    "key_facts": [
+      "96,221",
+      "89,023",
+      "Data Center",
+      "106%"
+    ]
+  },
+  {
+    "id": "q02",
+    "ticker": "NVDA",
+    "question": "What percentage of NVIDIA's Data Center revenue came from Hopper shipments to China in Q2 fiscal 2027?",
+    "expected_source": "filings",
+    "expected_answer": "Shipments of Data Center Hopper products to China during the second quarter of fiscal 2027 were less than 1% of Data Center revenue.",
+    "key_facts": [
+      "less than 1%",
+      "Hopper",
+      "China"
+    ]
+  },
+  {
+    "id": "q03",
+    "ticker": "NVDA",
+    "question": "What commitment has NVIDIA made regarding unused capacity under agreements with AI cloud partners?",
+    "expected_source": "filings",
+    "expected_answer": "Under agreements with AI clouds, if the AI cloud partners do not successfully sell committed capacity to third-party customers, NVIDIA has agreed to purchase that capacity.",
+    "key_facts": [
+      "purchase that capacity",
+      "committed capacity",
+      "AI clouds"
+    ]
+  },
+  {
+    "id": "q04",
+    "ticker": "NVDA",
+    "question": "What recent announcement by manufacturing partner Foxconn contributed to NVIDIA stock reaching record highs?",
+    "expected_source": "news_chunks",
+    "expected_answer": "Foxconn reported a surge in AI-driven Q3 revenue, signaling continued strong momentum and demand for NVIDIA AI hardware.",
+    "key_facts": [
+      "Foxconn",
+      "surge",
+      "AI-driven"
+    ]
+  },
+  {
+    "id": "q05",
+    "ticker": "NVDA",
+    "question": "How many shares did NVIDIA EVP Timothy Teter sell in recent September 2026 transactions?",
+    "expected_source": "news_chunks",
+    "expected_answer": "EVP Timothy Teter sold 30,460 shares of NVIDIA stock at an average price of $222.80.",
+    "key_facts": [
+      "30,460",
+      "Timothy Teter",
+      "$222.80"
+    ]
+  },
+  {
+    "id": "q06",
+    "ticker": "AAPL",
+    "question": "What were Apple's total net sales for the third fiscal quarter ended June 27, 2026?",
+    "expected_source": "filings",
+    "expected_answer": "Total net sales were $109,417 million ($109.42 billion), an increase of 16% compared to $94,036 million for the same period in 2025.",
+    "key_facts": [
+      "109,417",
+      "16%",
+      "94,036"
+    ]
+  },
+  {
+    "id": "q07",
+    "ticker": "AAPL",
+    "question": "How much net sales did Apple generate in Greater China during the three months ended June 27, 2026?",
+    "expected_source": "filings",
+    "expected_answer": "Greater China net sales were $18,816 million (approx $18.82 billion), up 22% compared to $15,369 million in the third quarter of 2025.",
+    "key_facts": [
+      "18,816",
+      "Greater China",
+      "22%"
+    ]
+  },
+  {
+    "id": "q08",
+    "ticker": "AAPL",
+    "question": "What supply chain risk does Apple highlight regarding its component sourcing in its 10-Q risk factors?",
+    "expected_source": "filings",
+    "expected_answer": "Apple currently obtains certain components from single or limited sources, exposing it to significant supply shortages and commodity pricing fluctuations.",
+    "key_facts": [
+      "single or limited sources",
+      "shortages",
+      "pricing fluctuations"
+    ]
+  },
+  {
+    "id": "q09",
+    "ticker": "AAPL",
+    "question": "How many Apple shares were sold by Timothy D. Cook's trust in recent insider trading reports?",
+    "expected_source": "news_chunks",
+    "expected_answer": "Timothy D. Cook's trust sold 191,753 shares of Apple stock.",
+    "key_facts": [
+      "191,753",
+      "Timothy D. Cook",
+      "trust"
+    ]
+  },
+  {
+    "id": "q10",
+    "ticker": "AAPL",
+    "question": "How much has Apple stock gained over the last 52 weeks and year-to-date according to recent market analysis?",
+    "expected_source": "news_chunks",
+    "expected_answer": "AAPL stock gained 29% over the last 52 weeks and climbed 21% year-to-date (YTD).",
+    "key_facts": [
+      "29%",
+      "52 weeks",
+      "21%",
+      "year-to-date"
+    ]
+  },
+  {
+    "id": "q11",
+    "ticker": "TSLA",
+    "question": "What were Tesla's total revenues for the second quarter ended June 30, 2026?",
+    "expected_source": "filings",
+    "expected_answer": "Total revenues were $28,236 million (approx $28.24 billion), up 26% compared to $22,496 million for the second quarter of 2025.",
+    "key_facts": [
+      "28.24 billion",
+      "total revenues"
+    ]
+  },
+  {
+    "id": "q12",
+    "ticker": "TSLA",
+    "question": "How many consumer vehicles did Tesla produce and deliver through the second quarter of 2026?",
+    "expected_source": "filings",
+    "expected_answer": "Tesla produced approximately 860,000 consumer vehicles and delivered approximately 838,000 consumer vehicles through the second quarter of 2026.",
+    "key_facts": [
+      "860 thousand",
+      "838 thousand",
+      "produced",
+      "delivered"
+    ]
+  },
+  {
+    "id": "q13",
+    "ticker": "TSLA",
+    "question": "What autonomous and robotic products is Tesla developing and investing heavily in according to its 10-Q?",
+    "expected_source": "filings",
+    "expected_answer": "Tesla is investing heavily in FSD (Supervised) autonomous capabilities, the purpose-built Robotaxi service, and Optimus AI robots.",
+    "key_facts": [
+      "Optimus",
+      "Robotaxi",
+      "FSD"
+    ]
+  },
+  {
+    "id": "q14",
+    "ticker": "TSLA",
+    "question": "How many vehicles did Tesla produce in the third quarter of 2026 according to recent production reports?",
+    "expected_source": "news_chunks",
+    "expected_answer": "Tesla's Q3 production totaled 464,391 vehicles.",
+    "key_facts": [
+      "464,391",
+      "production",
+      "vehicles"
+    ]
+  },
+  {
+    "id": "q15",
+    "ticker": "TSLA",
+    "question": "What semiconductor manufacturing company did Elon Musk confirm talks with regarding Tesla?",
+    "expected_source": "news_chunks",
+    "expected_answer": "Elon Musk confirmed talks with Taiwan Semiconductor Manufacturing Company (TSMC).",
+    "key_facts": [
+      "TSMC",
+      "Musk"
+    ]
+  }
+]
