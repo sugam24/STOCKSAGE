@@ -21,6 +21,7 @@ Usage:
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -29,8 +30,12 @@ from chromadb.api.models.Collection import Collection
 
 from src.rag.embeddings import embed
 
-# Project root → <root>/data/chroma  (git-ignored)
-PERSIST_DIR = Path(__file__).resolve().parents[2] / "data" / "chroma"
+# Project root → <root>/data/chroma  (git-ignored).
+# STOCKSAGE_CHROMA_DIR overrides it (the evaluation harness uses an isolated DB).
+PERSIST_DIR = Path(
+    os.getenv("STOCKSAGE_CHROMA_DIR")
+    or Path(__file__).resolve().parents[2] / "data" / "chroma"
+)
 DEFAULT_COLLECTION = "news"
 
 _client: Any = None  # chromadb.PersistentClient instance (lazy)
