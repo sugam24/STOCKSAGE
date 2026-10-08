@@ -6,6 +6,8 @@ Day 24: The full RAG pipeline.
     question ─► (index news if needed) ─► hybrid retrieve (embeddings + BM25, RRF)
              ─► FlashRank rerank (top 3) ─► formatted context ─► Groq ─► grounded answer
 
+Day 26: routes between news and SEC filings (``collection="auto"``).
+
 Steps covered:
   120. ``get_context(query, ticker)`` — one async call that runs the whole
        retrieval chain and returns a clean, numbered text block.
@@ -31,13 +33,18 @@ import sys
 from typing import Any
 
 from src.core.llm.client import get_llm_response
-from src.rag import vectorstore
 from src.rag.hybrid import hybrid_retrieve
 from src.rag.reranker import rerank
-from src.rag.retriever import CHUNK_COLLECTION, index_news
+from src.rag.retriever import (
+    AUTO,
+    FILINGS_COLLECTION,
+    has_documents,
+    index_news,
+    route_query,
+)
 
 PROMPT_TEMPLATE = """\
-Using ONLY the following news context, answer the question:
+Using ONLY the following news and SEC filing context, answer the question:
 
 {context}
 
@@ -50,17 +57,29 @@ Rules:
 
 SYSTEM_PROMPT = (
     "You are StockSage, a careful financial research assistant. "
-    "Answer strictly from the provided news context and cite sources."
+    "Answer strictly from the provided context and cite sources."
 )
 
-NO_CONTEXT = "No relevant news context was found."
+NO_CONTEXT = "No relevant context was found."
+
+# Day 26: if the best *filings* chunk reranks below this, also pull news
+# candidates and let the reranker choose across both collections.
+RERANK_FALLBACK_SCORE = 0.30
 
 
-def _has_stored_news(ticker: str) -> bool:
-    res = vectorstore.get_collection(CHUNK_COLLECTION).get(
-        where={"ticker": ticker}, limit=1, include=[]
-    )
-    return bool(res["ids"])
+def _ensure_indexed(ticker: str, collection: str, refresh: bool) -> None:
+    """Fetch & index *collection* for *ticker* if empty (or if *refresh*)."""
+    if not refresh and has_documents(ticker, collection):
+        return
+    if collection == FILINGS_COLLECTION:
+        from src.ingestion.edgar_client import index_filing
+
+        try:
+            index_filing(ticker)
+        except Exception as exc:  # noqa: BLE001 — e.g. foreign issuer with no 10-Q
+            print(f"[pipeline] could not index filings for {ticker}: {exc}")
+    else:
+        index_news(ticker, chunked=True)
 
 
 def format_context(docs: list[dict[str, Any]]) -> str:
@@ -79,30 +98,53 @@ def format_context(docs: list[dict[str, Any]]) -> str:
     return "\n\n".join(blocks)
 
 
+async def _candidates(query: str, ticker: str, collection: str, n: int) -> list[dict[str, Any]]:
+    hits = await asyncio.to_thread(hybrid_retrieve, query, ticker, n, collection=collection)
+    for h in hits:
+        h["metadata"]["collection"] = collection
+    return hits
+
+
 async def get_context_docs(
     query: str,
     ticker: str,
     *,
-    top_n: int = 3,
-    candidates: int = 10,
+    top_n: int = 4,
+    candidates: int = 20,
     refresh: bool = False,
+    collection: str = AUTO,
 ) -> list[dict[str, Any]]:
-    """Run the retrieval chain and return the reranked top-*n* docs (structured)."""
-    ticker = ticker.upper().strip()
-    if refresh or not await asyncio.to_thread(_has_stored_news, ticker):
-        await asyncio.to_thread(index_news, ticker, chunked=True)
+    """
+    Run the retrieval chain and return the reranked top-*n* docs (structured).
 
-    hits = await asyncio.to_thread(hybrid_retrieve, query, ticker, candidates)
-    return await asyncio.to_thread(rerank, query, hits, top_n)
+    ``collection="auto"`` (default) uses ``route_query``: news for timely
+    questions; otherwise filings first, adding news candidates when the best
+    filings chunk reranks below ``RERANK_FALLBACK_SCORE``.
+    """
+    ticker = ticker.upper().strip()
+    order = route_query(query) if collection == AUTO else [collection]
+
+    await asyncio.to_thread(_ensure_indexed, ticker, order[0], refresh)
+    pool = await _candidates(query, ticker, order[0], candidates)
+    top = await asyncio.to_thread(rerank, query, pool, top_n)
+
+    for fallback in order[1:]:
+        if top and top[0]["score"] >= RERANK_FALLBACK_SCORE:
+            break
+        await asyncio.to_thread(_ensure_indexed, ticker, fallback, refresh)
+        pool += await _candidates(query, ticker, fallback, candidates)
+        top = await asyncio.to_thread(rerank, query, pool, top_n)
+    return top
 
 
 async def get_context(
     query: str,
     ticker: str,
     *,
-    top_n: int = 3,
-    candidates: int = 10,
+    top_n: int = 4,
+    candidates: int = 20,
     refresh: bool = False,
+    collection: str = AUTO,
 ) -> str:
     """
     Step 120: question → clean context block ready to paste into a prompt.
@@ -110,13 +152,15 @@ async def get_context(
     Args:
         query: The user's question.
         ticker: Stock symbol whose news to search.
-        top_n: Docs to keep after reranking.
-        candidates: Hybrid results passed to the reranker.
+        top_n: Docs to keep after reranking (Day 29 optimized: 4).
+        candidates: Hybrid results passed to the reranker (Day 29 optimized: 20).
         refresh: Re-fetch news from Tavily even if some is already stored.
             (If nothing is stored for the ticker yet, it is fetched automatically.)
+        collection: ``"auto"`` (route news vs. filings), ``"news_chunks"`` or ``"filings"``.
     """
     docs = await get_context_docs(
-        query, ticker, top_n=top_n, candidates=candidates, refresh=refresh
+        query, ticker, top_n=top_n, candidates=candidates, refresh=refresh,
+        collection=collection,
     )
     return format_context(docs)
 
