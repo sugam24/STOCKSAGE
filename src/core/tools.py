@@ -209,11 +209,16 @@ def run_agent(
         print(f"\n{'─' * 60}")
         print(f"  User  → {question}")
 
-    # Step 37 + Step 39 – bounded agentic loop
+    # Step 37 + Step 39 – bounded agentic loop (Day 31 ReAct: Reasoning -> Action -> Observation)
     for iteration in range(1, max_iterations + 1):
         if verbose:
             print(f"  [iteration {iteration}/{max_iterations}]")
 
+        # ------------------------------------------------------------------
+        # ReAct Step 1: REASONING
+        # The LLM attends over the conversation context, evaluates progress,
+        # and decides whether to emit a tool call (action) or a final answer.
+        # ------------------------------------------------------------------
         response = client.chat.completions.create(  # type: ignore[arg-type]
             model=MODEL,
             messages=messages,
@@ -243,13 +248,21 @@ def run_agent(
             if verbose:
                 print(f"  Model → function_call: {name}({args})")
 
-            # Step 37 – dispatch to the registered Python function
+            # --------------------------------------------------------------
+            # ReAct Step 2: ACTION
+            # The orchestrator dispatches the structured tool call to the
+            # external environment / Python function.
+            # --------------------------------------------------------------
             result = dispatcher.dispatch(name, args)
 
             if verbose:
                 print(f"  Tool  → {name} returned: {result!r}")
 
-            # Groq requires one "tool" role message per tool_call_id
+            # --------------------------------------------------------------
+            # ReAct Step 3: OBSERVATION
+            # The environment's output is recorded and fed back into the
+            # conversation buffer, conditioning the next REASONING step.
+            # --------------------------------------------------------------
             messages.append({
                 "role": "tool",
                 "tool_call_id": tc.id,
