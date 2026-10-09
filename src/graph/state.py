@@ -62,6 +62,9 @@ class StockSageState(TypedDict, total=False):
     risk_metrics: dict[str, Any]
     final_report: str
     human_feedback: str
+    critique: str
+    revision_count: int
+    user_context: dict[str, Any]
     conversation_history: Annotated[list[dict[str, str]], append_history]
     error_log: Annotated[list[str], append_error]
 
@@ -70,6 +73,7 @@ def create_initial_state(
     ticker: str = "",
     user_query: str = "",
     conversation_history: list[dict[str, str]] | None = None,
+    user_context: dict[str, Any] | None = None,
 ) -> StockSageState:
     """
     Initialize a StockSageState instance for a target ticker or natural language query.
@@ -85,6 +89,9 @@ def create_initial_state(
         "risk_metrics": {},
         "final_report": "",
         "human_feedback": "",
+        "critique": "",
+        "revision_count": 0,
+        "user_context": dict(user_context or {}),
         "conversation_history": list(conversation_history or []),
         "error_log": [],
     }
