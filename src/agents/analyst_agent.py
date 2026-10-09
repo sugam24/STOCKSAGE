@@ -62,13 +62,41 @@ def build_analyst_prompt(
     stock_data: dict[str, Any],
     news_context: list[str],
     risk_metrics: dict[str, Any],
+    critique: str = "",
 ) -> str:
-    """Format all upstream multi-agent context into a unified prompt."""
+    """
+    Step 182, 219 & 223: Format all upstream context into a unified prompt,
+    acknowledging any missing/unavailable data streams and critique feedback.
+    """
+    missing_notes: list[str] = []
+    if not stock_data or stock_data.get("status") == "unavailable":
+        missing_notes.append("• Fundamental and technical price data was unavailable for this analysis.")
+    if not news_context or any("[UNAVAILABLE]" in c for c in news_context):
+        missing_notes.append("• Recent news and SEC regulatory filings were unavailable for this analysis.")
+    if not risk_metrics or risk_metrics.get("status") == "unavailable":
+        missing_notes.append("• Quantitative risk metrics (volatility, VaR, drawdown) were unavailable.")
+
+    missing_notice = ""
+    if missing_notes:
+        missing_notice = (
+            "\n### ⚠️ DATA AVAILABILITY WARNINGS:\n"
+            + "\n".join(missing_notes)
+            + "\nIMPORTANT: You must explicitly acknowledge these missing data sources in your executive summary.\n"
+        )
+
+    critique_notice = ""
+    if critique:
+        critique_notice = (
+            f"\n### 📝 REVISION INSTRUCTIONS FROM CRITIC (Score < 4):\n"
+            f"{critique}\n"
+            f"Address every critique point directly in this improved revision.\n"
+        )
+
     news_text = "\n\n".join(news_context) if news_context else "No recent news context available."
 
     return f"""\
-Synthesize the following comprehensive intelligence packet for {ticker}:
-
+Synthesize the following intelligence packet for {ticker}:
+{missing_notice}{critique_notice}
 ### 1. MARKET DATA & TECHNICAL INDICATORS (Data Agent):
 {json.dumps(stock_data, indent=2, default=str)}
 
@@ -87,6 +115,7 @@ def _generate_report_sync(
     stock_data: dict[str, Any],
     news_context: list[str],
     risk_metrics: dict[str, Any],
+    critique: str = "",
     model: str = DEFAULT_MODEL,
 ) -> StockReport:
     """Synchronous worker that calls Groq with JSON mode and validates StockReport."""
@@ -95,7 +124,7 @@ def _generate_report_sync(
         raise ValueError("GROQ_API_KEY is not set. Add it to .env.")
 
     client = Groq(api_key=api_key)
-    prompt = build_analyst_prompt(ticker, stock_data, news_context, risk_metrics)
+    prompt = build_analyst_prompt(ticker, stock_data, news_context, risk_metrics, critique=critique)
 
     response = client.chat.completions.create(
         model=model,
@@ -119,6 +148,15 @@ def _generate_report_sync(
 
 def render_markdown_report(report: StockReport, risk_metrics: dict[str, Any]) -> str:
     """Format the structured StockReport model into a clean institutional markdown document."""
+    vol = risk_metrics.get('volatility_annualized')
+    vol_str = f"{vol:.1%}" if isinstance(vol, (int, float)) else str(vol or 'N/A')
+    var = risk_metrics.get('var_95_daily')
+    var_str = f"{var:.1%}" if isinstance(var, (int, float)) else str(var or 'N/A')
+    dd = risk_metrics.get('max_drawdown')
+    dd_str = f"{dd:.1%}" if isinstance(dd, (int, float)) else str(dd or 'N/A')
+    beta = risk_metrics.get('beta')
+    beta_str = f"{beta:.2f}" if isinstance(beta, (int, float)) else str(beta or 'N/A')
+
     return f"""# 📈 StockSage Investment Research Report: {report.ticker}
 
 ## Executive Summary
@@ -131,19 +169,16 @@ def render_markdown_report(report: StockReport, risk_metrics: dict[str, Any]) ->
 {report.bear_case}
 
 ## ⚖️ Quantitative Risk Profile: {report.risk_rating.upper()}
-- **Annualized Volatility:** {risk_metrics.get('volatility_annualized', 'N/A')}
-- **Historical 1-Day VaR (95%):** {risk_metrics.get('var_95_daily', 'N/A')}
-- **Max Drawdown:** {risk_metrics.get('max_drawdown', 'N/A')}
-- **Beta:** {risk_metrics.get('beta', 'N/A')}
+- **Annualized Volatility:** {vol_str}
+- **Historical 1-Day VaR (95%):** {var_str}
+- **Max Drawdown:** {dd_str}
+- **Beta:** {beta_str}
 """
 
 
 async def analyst_agent_node(state: StockSageState | dict[str, Any]) -> dict[str, Any]:
     """
-    Step 183: Async LangGraph node for the Analyst Agent.
-
-    Synthesizes upstream agent data into a structured StockReport and
-    populates `final_report` in StockSageState.
+    Step 183 & 218: Async LangGraph node for the Analyst Agent with graceful degradation.
     """
     ticker = state.get("ticker", "").strip().upper()
     if not ticker:
@@ -154,6 +189,7 @@ async def analyst_agent_node(state: StockSageState | dict[str, Any]) -> dict[str
     stock_data = state.get("stock_data") or {}
     news_context = state.get("news_context") or []
     risk_metrics = state.get("risk_metrics") or {}
+    critique = state.get("critique") or ""
 
     try:
         report = await asyncio.to_thread(
@@ -162,6 +198,7 @@ async def analyst_agent_node(state: StockSageState | dict[str, Any]) -> dict[str
             stock_data,
             news_context,
             risk_metrics,
+            critique,
         )
 
         formatted_report = render_markdown_report(report, risk_metrics)
@@ -171,8 +208,17 @@ async def analyst_agent_node(state: StockSageState | dict[str, Any]) -> dict[str
 
     except Exception as exc:
         error_msg = f"AnalystAgent error for {ticker}: {exc}"
+        # Graceful degradation fallback report: never crash the pipeline outright
+        fallback_report = (
+            f"# 📈 StockSage Partial Research Report: {ticker}\n\n"
+            f"**Notice:** Automated report synthesis encountered an issue ({exc}).\n\n"
+            f"### Available Data Points:\n"
+            f"- Price: ${stock_data.get('latest_close', 'N/A')}\n"
+            f"- News Items Retrieved: {len(news_context)}\n"
+            f"- Risk Metrics Status: {risk_metrics.get('risk_level', 'N/A')}\n"
+        )
         return {
-            "final_report": "",
+            "final_report": fallback_report,
             "error_log": [error_msg],
         }
 

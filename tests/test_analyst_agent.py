@@ -50,7 +50,8 @@ def test_render_markdown_report():
     assert "## 🐂 Bull Case & Catalysts" in rendered
     assert "## 🐻 Bear Case & Downside Risks" in rendered
     assert "MODERATE" in rendered
-    assert "0.24" in rendered
+    assert "24.0%" in rendered
+    assert "1.15" in rendered
 
 
 def test_analyst_agent_node_mocked():
