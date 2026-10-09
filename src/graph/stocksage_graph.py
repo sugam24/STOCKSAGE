@@ -185,11 +185,14 @@ def build_sequential_graph():
 def build_stocksage_graph(
     checkpointer: Any | None = None,
     enable_hitl: bool = False,
+    enable_critic: bool = True,
 ):
     """
-    Days 41–45: Production Multi-Agent Graph with Supervisor, Parallelism,
-    Persistence, and Memory.
+    Days 41–49: Production Multi-Agent Graph with Supervisor, Parallelism,
+    Persistence, Memory, and Self-Reflection Critic.
     """
+    from src.agents.critic_node import critic_node, route_from_critic
+
     builder = StateGraph(StockSageState)
 
     # Register Nodes
@@ -204,6 +207,9 @@ def build_stocksage_graph(
 
     if enable_hitl:
         builder.add_node("human_review", human_review_node)
+
+    if enable_critic:
+        builder.add_node("critic", critic_node)
 
     # Connect START to Supervisor
     builder.add_edge(START, "supervisor")
@@ -241,10 +247,20 @@ def build_stocksage_graph(
             ["analyst_agent"],
         )
 
+    # Analyst Agent transitions to Critic (Day 49) or directly to turn finalization
+    if enable_critic:
+        builder.add_edge("analyst_agent", "critic")
+        builder.add_conditional_edges(
+            "critic",
+            route_from_critic,
+            ["analyst_agent", "finalize_turn"],
+        )
+    else:
+        builder.add_edge("analyst_agent", "finalize_turn")
+
     # All paths finalize turn memory
     builder.add_edge("data_summary", "finalize_turn")
     builder.add_edge("news_summary", "finalize_turn")
-    builder.add_edge("analyst_agent", "finalize_turn")
     builder.add_edge("finalize_turn", END)
 
     return builder.compile(checkpointer=checkpointer)
