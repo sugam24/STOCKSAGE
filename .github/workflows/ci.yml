@@ -1,0 +1,36 @@
+name: StockSage CI Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Automated Unit & Graph Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install project dependencies
+        run: uv sync --frozen
+
+      - name: Run offline unit tests
+        env:
+          GROQ_API_KEY: "dummy_groq_key_for_offline_ci"
+          TAVILY_API_KEY: "dummy_tavily_key_for_offline_ci"
+          STOCKSAGE_API_KEY: "stocksage-dev-key-12345"
+        run: |
+          uv run pytest -m "not integration" -v --tb=short

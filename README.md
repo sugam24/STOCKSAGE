@@ -1,5 +1,11 @@
 # StockSage 📈
 
+[![CI Pipeline](https://github.com/sugam24/STOCKSAGE/actions/workflows/ci.yml/badge.svg)](https://github.com/sugam24/STOCKSAGE/actions/workflows/ci.yml)
+[![FastAPI](https://img.shields.io/badge/FastAPI-1.0.0-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.42.0-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io)
+[![LangGraph](https://img.shields.io/badge/LangGraph-Multi--Agent-blue)](https://langchain-ai.github.io/langgraph/)
+[![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
+
 **An institutional-grade, multi-agent AI financial research platform** combining real-time market data, statutory SEC EDGAR filings (10-Q/10-K), news intelligence, hybrid retrieval (Dense + BM25 with Reciprocal Rank Fusion), neural cross-encoder reranking, and citation-grounded LLM synthesis.
 
 Built as a 75-day progressive engineering journey. This repository currently features **Phase 1 (Foundations)** and **Phase 2 (RAG & Retrieval Architecture)** across **Days 1–30**.
