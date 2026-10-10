@@ -378,9 +378,11 @@ async def websocket_status_stream(websocket: WebSocket, session_id: str):
 
 
 def main():
-    """CLI runner helper."""
+    """CLI runner helper with dynamic PORT support for Railway / Render."""
     import uvicorn
-    uvicorn.run("src.api.main:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.getenv("PORT", 8000))
+    host = os.getenv("HOST", "0.0.0.0")
+    uvicorn.run("src.api.main:app", host=host, port=port, reload=False)
 
 
 if __name__ == "__main__":
