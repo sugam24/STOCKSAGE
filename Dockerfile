@@ -27,7 +27,6 @@ RUN uv sync --frozen --no-dev
 # Copy application source code
 COPY src/ ./src/
 COPY api/ ./api/
-COPY data/ ./data/
 
 # Create data directories
 RUN mkdir -p data/chroma
