@@ -46,9 +46,20 @@ st.set_page_config(
 # ---------------------------------------------------------------------------
 with st.sidebar:
     st.image("https://img.icons8.com/fluency/96/bullish.png", width=64)
-    st.title("StockSage Settings")
-    api_url = st.text_input("Backend API URL", value=API_BASE_URL)
+    api_url = st.text_input("Backend API URL", value=API_BASE_URL).strip().rstrip("/")
     api_key = st.text_input("X-API-Key", value=DEFAULT_API_KEY, type="password")
+    
+    if st.button("🔌 Test Backend Connection", use_container_width=True):
+        try:
+            with httpx.Client(timeout=5.0) as client:
+                health_resp = client.get(f"{api_url}/health")
+                if health_resp.status_code == 200:
+                    st.success("✅ Backend Online & Reachable!")
+                else:
+                    st.error(f"❌ Backend returned HTTP {health_resp.status_code}")
+        except Exception as err:
+            st.error(f"❌ Cannot connect: {err}")
+
     enable_hitl = st.checkbox("Enable Human-in-the-Loop Review Gate", value=False)
     st.markdown("---")
     st.markdown(
