@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  stocksage-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: stocksage-api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  stocksage-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: stocksage-ui
+    command: ["uv", "run", "streamlit", "run", "demo/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    environment:
+      - STOCKSAGE_API_URL=http://stocksage-api:8000
+    volumes:
+      - ./demo:/app/demo
+      - ./data:/app/data
+    depends_on:
+      stocksage-api:
+        condition: service_healthy
+    restart: unless-stopped
