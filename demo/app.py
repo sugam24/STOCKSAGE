@@ -23,8 +23,16 @@ import httpx
 import plotly.graph_objects as go
 import streamlit as st
 
-API_BASE_URL = os.getenv("STOCKSAGE_API_URL", "http://127.0.0.1:8000")
-DEFAULT_API_KEY = os.getenv("STOCKSAGE_API_KEY", "stocksage-dev-key-12345")
+def _get_setting(key: str, default: str) -> str:
+    try:
+        if hasattr(st, "secrets") and key in st.secrets:
+            return str(st.secrets[key])
+    except Exception:
+        pass
+    return os.getenv(key, default)
+
+API_BASE_URL = _get_setting("STOCKSAGE_API_URL", "http://127.0.0.1:8000")
+DEFAULT_API_KEY = _get_setting("STOCKSAGE_API_KEY", "stocksage-dev-key-12345")
 
 # Page Configuration
 st.set_page_config(
