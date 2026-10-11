@@ -2,510 +2,507 @@
 
 [![CI Pipeline](https://github.com/sugam24/STOCKSAGE/actions/workflows/ci.yml/badge.svg)](https://github.com/sugam24/STOCKSAGE/actions/workflows/ci.yml)
 [![Live Demo](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io)
-[![FastAPI](https://img.shields.io/badge/FastAPI-1.0.0-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.42.0-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io)
-[![LangGraph](https://img.shields.io/badge/LangGraph-Multi--Agent-blue)](https://langchain-ai.github.io/langgraph/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.143%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.65%2B-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io)
+[![LangGraph](https://img.shields.io/badge/LangGraph-Multi--Agent-1C3C3C?logo=langchain&logoColor=white)](https://langchain-ai.github.io/langgraph/)
+[![ChromaDB](https://img.shields.io/badge/ChromaDB-Vector_Store-FF6F00)](https://trychroma.com/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
+[![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **StockSage is an institutional-grade, multi-agent AI financial research platform that orchestrates specialized LangGraph agents (Data, News RAG, Risk, Analyst, Reflexion Critic) over real-time market data, statutory SEC EDGAR filings, and neural reranked news to generate citation-grounded equity research reports with Human-in-the-Loop oversight.**
+> **An institutional-grade, autonomous multi-agent financial research platform powered by LangGraph, Hybrid RAG (Dense Embeddings + BM25 + Cross-Encoder Reranking), Quantitative Risk Modeling, FastAPI, and Streamlit.**
 
-Built as a 75-day progressive masterclass journey. StockSage now features **Phase 1 (Foundations)**, **Phase 2 (RAG & Retrieval Engine)**, **Phase 3 (LangGraph Multi-Agent Orchestration)**, and **Phase 4 (FastAPI Backend, Streamlit UI, Docker & Cloud Deployment)** across **Days 1–68**.
+---
+
+## Executive Summary
+
+Standard Large Language Models fail at institutional equity research due to **stale training cutoffs**, **arithmetic hallucinations**, and **unverifiable claims**. **StockSage** eliminates these failure modes by decoupling data retrieval, mathematical computation, qualitative RAG synthesis, and editorial verification into a deterministic **LangGraph Multi-Agent State Machine**:
+
+1. **Intent Classification & Conditional Routing**: A **Supervisor Agent** resolves multi-turn conversational context and dynamically routes queries—executing lightweight single-agent paths (`data_only` or `news_only` to save up to 75% in token compute) or triggering a full multi-agent deep-research workflow (`full_analysis`).
+2. **Parallel Fan-Out Ingestion**: The **Data Agent** (live market fundamentals & Wilder's RSI/SMA technical indicators) and **News & Filings Agent** (SEC EDGAR 10-Q/10-K filings + real-time financial news via Hybrid RAG) execute concurrently, cutting data collection latency by ~40%.
+3. **Deterministic Quantitative Risk Engine**: A dedicated **Risk Agent** computes Annualized Volatility, 95% Historical Value at Risk ($\text{VaR}_{95\%}$), Maximum Drawdown ($\text{MDD}$), and Beta directly from historical OHLCV price series—never delegating math to an LLM.
+4. **Human-in-the-Loop (HITL) Governance**: Integrates native LangGraph `interrupt()` checkpoints before synthesis, enabling analysts to inspect intermediate fundamentals, news snippets, and risk metrics to either approve synthesis or inject custom revision directives.
+5. **Reflexion Self-Correction Loop**: An **Analyst Agent** synthesizes all findings into a structured `StockReport`, which is immediately audited by an independent **Critic Node** against an editorial rubric (completeness, citation rigor, bull/bear balance). Reports scoring $< 4/5$ are automatically routed back with targeted feedback for revision.
 
 ---
 
 ## Table of Contents
 
-- [Overview & Architecture](#overview--architecture)
-- [Why StockSage is Non-Trivial](#why-stocksage-is-non-trivial)
-- [Multi-Agent System Architecture](#multi-agent-system-architecture)
-- [Phase 2: RAG Deep Dive (Days 16–30)](#phase-2-rag-deep-dive-days-1630)
-- [Phase 3: Multi-Agent Deep Dive (Days 31–50)](#phase-3-multi-agent-deep-dive-days-3150)
-- [Phase 4: Full Stack & Deployment (Days 51–68)](#phase-4-full-stack--deployment-days-5168)
-- [Project Directory Structure](#project-directory-structure)
-- [Prerequisites & Environment Setup](#prerequisites--environment-setup)
-- [Installation](#installation)
-- [Quickstart: Running StockSage](#quickstart-running-stocksage)
-  - [1. Streamlit Web Dashboard](#1-streamlit-web-dashboard)
-  - [2. FastAPI Backend & Swagger Docs](#2-fastapi-backend--swagger-docs)
-  - [3. Docker Compose (Full Stack)](#3-docker-compose-full-stack)
-  - [4. Multi-Agent CLI Pipeline](#4-multi-agent-cli-pipeline)
-  - [5. News RAG Agent](#5-news-rag-agent)
-- [Evaluation & Benchmarking (Days 27–29)](#evaluation--benchmarking-days-2729)
-- [Test Suite & CI Pipeline](#test-suite--ci-pipeline)
-- [Curriculum & Roadmap](#curriculum--roadmap)
-- [Tech Stack](#tech-stack)
-- [License](#license)
+1. [System Architecture](#system-architecture)
+2. [Engineering Highlights & Key Capabilities](#engineering-highlights--key-capabilities)
+3. [4-Phase Engineering Architecture & File-by-File Reference](#4-phase-engineering-architecture--file-by-file-reference)
+   - [Phase 1: Core Foundations, Tool-Calling Loop & Data Ingestion](#phase-1-core-foundations-tool-calling-loop--data-ingestion)
+   - [Phase 2: Hybrid RAG Engine, SEC EDGAR & Golden Evaluation](#phase-2-hybrid-rag-engine-sec-edgar--golden-evaluation)
+   - [Phase 3: Multi-Agent LangGraph Orchestration & Quantitative Risk](#phase-3-multi-agent-langgraph-orchestration--quantitative-risk)
+   - [Phase 4: Full-Stack FastAPI Backend, Streamlit UI, Docker & CI/CD](#phase-4-full-stack-fastapi-backend-streamlit-ui-docker--cicd)
+4. [Complete Repository Directory Tree](#complete-repository-directory-tree)
+5. [RAG Benchmarking & Empirical Evaluation](#rag-benchmarking--empirical-evaluation)
+6. [Getting Started & Installation](#getting-started--installation)
+7. [Running StockSage (UI, API, Docker, CLI)](#running-stocksage-ui-api-docker-cli)
+8. [Automated Test Suite & Continuous Integration](#automated-test-suite--continuous-integration)
+9. [Tech Stack](#tech-stack)
 
 ---
 
-## Overview & Architecture
+## System Architecture
 
-Standard LLMs suffer from stale training data, knowledge cutoffs, and mathematical hallucinations—fatal flaws in quantitative financial analysis. **StockSage** solves this with a deterministic, multi-agent architecture orchestrated by **LangGraph**:
-1. A **Supervisor** plans and routes tasks conditionally based on user intent.
-2. **Data & News Agents** execute in parallel, streaming real-time market metrics and SEC EDGAR regulatory filings.
-3. A **Risk Agent** calculates quantitative metrics (Annualized Volatility, Historical Value at Risk, Maximum Drawdown).
-4. An optional **Human-in-the-Loop (HITL)** interrupt checkpoint gives analysts control before final synthesis.
-5. An **Analyst Agent** compiles the findings into an institutional research report with verified inline citations (`[1]`, `[2]`).
-6. A **Reflexion Critic Agent** grades the report against institutional rubrics and triggers targeted self-correction loops if flaws or ungrounded assertions are detected.
+### 1. Multi-Agent LangGraph Orchestration Flow
 
 ```mermaid
 flowchart TD
-    subgraph Frontend ["User Interface"]
-        Streamlit["Streamlit Dashboard<br/>(demo/app.py :8501)"]
+    START([User Query & Ticker]) --> Supervisor["1. Supervisor Agent<br/>(src/agents/supervisor.py)<br/>Intent Classification & Pronoun Resolution"]
+
+    Supervisor -->|"route = data_only"| DataAgentSolo["Data Agent<br/>(src/agents/data_agent.py)"]
+    DataAgentSolo --> DataSummary["Direct Market Snapshot<br/>(data_summary_node)"]
+    DataSummary --> FinalizeTurn["Turn Finalization & Memory<br/>(finalize_turn_node)"]
+
+    Supervisor -->|"route = news_only"| NewsAgentSolo["News & Filings Agent<br/>(src/agents/news_agent.py)"]
+    NewsAgentSolo --> NewsSummary["Direct Regulatory & News Brief<br/>(news_summary_node)"]
+    NewsSummary --> FinalizeTurn
+
+    subgraph ParallelFanOut ["Parallel Execution Fan-Out (route = full_analysis)"]
+        DataAgent["2. Data Agent Node<br/>(src/agents/data_agent.py)<br/>yfinance Fundamentals, OHLCV, Wilder's RSI-14, SMA-20/50"]
+        NewsAgent["3. News & Filings Agent Node<br/>(src/agents/news_agent.py)<br/>SEC EDGAR 10-Q/10-K + Tavily News Hybrid RAG"]
     end
 
-    subgraph API ["FastAPI Web Backend (:8000)"]
-        REST["REST Endpoints<br/>(/health, /analyze, /portfolio)"]
-        WS["WebSocket Stream<br/>(/ws/status/{session_id})"]
+    Supervisor -->|"full_analysis"| DataAgent
+    Supervisor -->|"full_analysis"| NewsAgent
+
+    DataAgent --> RiskAgent["4. Quantitative Risk Agent Node<br/>(src/agents/risk_agent.py & risk_metrics.py)<br/>Annualized Volatility, Historical VaR (95%), Max Drawdown"]
+
+    RiskAgent --> HITL{"5. Human-in-the-Loop Gate<br/>(human_review_node / LangGraph interrupt)<br/>Approve or Request Revision?"}
+    NewsAgent --> HITL
+
+    HITL -->|"Approved / Feedback Injected"| AnalystAgent["6. Analyst Agent Node<br/>(src/agents/analyst_agent.py)<br/>Synthesizes Structured StockReport + Graceful Degradation"]
+
+    AnalystAgent --> CriticNode{"7. Reflexion Critic Node<br/>(src/agents/critic_node.py)<br/>Rubric Score >= 4/5?"}
+    CriticNode -->|"Score < 4 (Max 2 Revisions)"| AnalystAgent
+    CriticNode -->|"Score >= 4 (Approved)"| FinalizeTurn
+
+    FinalizeTurn --> END([Final Structured Equity Report])
+
+    subgraph PersistenceAndMemory ["State Persistence & Observability"]
+        Checkpointer[("SqliteSaver Checkpointer<br/>data/stocksage_checkpoints.db")]
+        UserMemory[("Long-Term UserMemoryStore<br/>data/user_memory.db")]
+        LangSmith["LangSmith Distributed Tracing"]
     end
 
-    Streamlit -->|HTTP Requests| REST
-    Streamlit <-->|Live Status Updates| WS
+    FinalizeTurn -.-> Checkpointer
+    FinalizeTurn -.-> UserMemory
+    AnalystAgent -.-> LangSmith
+```
 
-    subgraph LangGraph ["LangGraph Multi-Agent Engine (graph/stocksage_graph.py)"]
-        Supervisor["Supervisor Node<br/>(agents/supervisor.py)<br/>Conditional Planner & Routing"]
-        
-        subgraph ParallelExecution ["Parallel Execution Layer"]
-            DataAgent["Data Agent Node<br/>(agents/data_agent.py)<br/>yfinance Fundamentals & Technicals"]
-            NewsAgent["News Agent Node<br/>(agents/news_agent.py)<br/>Hybrid RAG + SEC EDGAR Filings"]
-        end
+### 2. Hybrid RAG & Multi-Collection Retrieval Pipeline
 
-        RiskAgent["Risk Agent Node<br/>(agents/risk_agent.py)<br/>Volatility, VaR 95%, Max Drawdown"]
-        
-        HITL{"Human-in-the-Loop Gate<br/>(graph.interrupt)<br/>Review & Approve Context?"}
-        
-        AnalystAgent["Analyst Agent Node<br/>(agents/analyst_agent.py)<br/>Institutional Report Synthesis"]
-        
-        CriticAgent{"Reflexion Critic Node<br/>(agents/critic_agent.py)<br/>Score >= 80%?"}
+```mermaid
+flowchart LR
+    Query["User Question + Ticker"] --> Router{"Collection Router<br/>(route_query)"}
+
+    subgraph Ingestion ["Dual-Source Document Ingestion"]
+        Tavily["Tavily Financial News<br/>(30-Day Recency Filter)"]
+        EDGAR["SEC EDGAR REST API<br/>(10-Q / 10-K MD&A + Risk Factors)"]
+        Chunker["Sliding-Window Word Chunker<br/>(300 words / 50-word overlap)"]
+        Tavily --> Chunker
+        EDGAR --> Chunker
     end
 
-    REST --> Supervisor
-    Supervisor -->|Parallel Fan-Out| DataAgent
-    Supervisor -->|Parallel Fan-Out| NewsAgent
-    DataAgent --> RiskAgent
-    NewsAgent --> RiskAgent
-    RiskAgent --> HITL
-    HITL -->|Approved / Edited| AnalystAgent
-    AnalystAgent --> CriticAgent
-    CriticAgent -->|Revise / Refine| AnalystAgent
-
-    subgraph StorageAndTelemetry ["Persistence & Observability"]
-        SqliteCheckpointer[("SqliteSaver & BaseStore<br/>Thread Checkpoints & Long-Term Memory")]
-        LangSmith["LangSmith Tracing<br/>Run Telemetry & Token Cost"]
+    subgraph Chroma ["Persistent ChromaDB (data/chroma/)"]
+        NewsCol[("news_chunks<br/>Collection")]
+        FilingsCol[("filings<br/>Collection")]
+        Chunker --> NewsCol
+        Chunker --> FilingsCol
     end
 
-    CriticAgent -->|Pass / Complete| FinalReport["Institutional Research Report"]
-    LangGraph -.-> SqliteCheckpointer
-    LangGraph -.-> LangSmith
+    Router -->|"Timely / Breaking Intent"| NewsCol
+    Router -->|"Statutory / Fundamental Intent<br/>(with 0.35 Score Fallback)"| FilingsCol
+
+    subgraph HybridSearch ["Hybrid Search & Neural Reranking"]
+        Dense["Dense Bi-Encoder<br/>(all-MiniLM-L6-v2, 384-d)"]
+        Sparse["Sparse Lexical Search<br/>(Okapi BM25 + Financial Tokenizer)"]
+        RRF["Reciprocal Rank Fusion (RRF)<br/>score = Σ 1 / (60 + rank)"]
+        FlashRank["FlashRank Cross-Encoder<br/>(ms-marco-TinyBERT-L-2-v2)"]
+        Dense --> RRF
+        Sparse --> RRF
+        RRF -->|"Top-20 Candidates"| FlashRank
+    end
+
+    NewsCol --> Dense & Sparse
+    FilingsCol --> Dense & Sparse
+    FlashRank -->|"Top-4 Grounded Passages"| GroundedLLM["Groq LLM Synthesis<br/>with Strict [1], [2] Citations"]
 ```
 
 ---
 
-## Why StockSage is Non-Trivial
+## Engineering Highlights & Key Capabilities
 
-StockSage is engineered to professional software and quantitative finance standards, featuring architectural patterns rarely found in standard agent demos:
-
-* **LangGraph Deterministic State Machine**: Replaces fragile LLM "agent-as-a-loop" patterns with explicit state transitions, typed `StockSageState` schemas, and checkpointing.
-* **Parallel Execution Fan-Out**: Runs Data Agent (fundamentals & indicators) and News Agent (ChromaDB + Tavily + SEC EDGAR) concurrently in async tasks, cutting report generation latency by ~50%.
-* **Hybrid RAG with Cross-Encoder Neural Reranking**: Combines semantic embeddings (`all-MiniLM-L6-v2`) and exact keyword matching (`rank-bm25`) through Reciprocal Rank Fusion ($k = 60$), followed by FlashRank cross-encoder reranking to ensure 100% retrieval precision on institutional benchmarks.
-* **Quantitative Risk Analytics From Scratch**: Real financial mathematics for historical volatility, Value at Risk (VaR 95%), and Maximum Drawdown calculated directly from historical price series—eliminating LLM arithmetic errors.
-* **Human-in-the-Loop (HITL) Checkpoint**: Uses LangGraph's interruption mechanisms (`interrupt()`) to halt before synthesis, allowing financial analysts to review, inject corrections, or approve context before final publication.
-* **Reflexion Self-Correction & Critic Loop**: Employs an independent Critic agent that evaluates draft reports on factual grounding, clarity, and analytical depth. If score $< 80\%$, the critic provides structured feedback and loops back to the Analyst for refinement.
-* **State Persistence & Cross-Session Memory**: SQLite checkpointer (`SqliteSaver`) provides resilient step-by-step resume and thread rollback, while a long-term BaseStore retains user preferences and analysis history across sessions.
-* **Full-Stack Production Infrastructure**: Async FastAPI server with streaming WebSockets, interactive Streamlit frontend with Plotly financial charts, containerized multi-stage Docker builds, GitHub Actions CI testing, and LangSmith observability.
-
----
-
-## Key Features
-
-* **Dual-Source Ingestion**:
-  * **SEC EDGAR Integration (Day 25)**: Direct REST API connector extracting plain text, **MD&A (Management Discussion & Analysis)**, and **Risk Factors** directly from official 10-Q/10-K filings without third-party paywalls.
-  * **Tavily Financial News (Day 11 & 19)**: Real-time news search with 30-day temporal filtering.
-* **Intelligent Multi-Collection Query Routing (Day 26)**:
-  * Automatically routes timely queries ("latest", "today", "breaking") to `news_chunks`.
-  * Routes quantitative and statutory queries ("revenue last quarter", "margin") to official SEC `filings`.
-  * Includes confidence-score fallback to query secondary collections when primary relevance is borderline.
-* **Hybrid Search with Reciprocal Rank Fusion (Days 21 & 22)**:
-  * Combines semantic embeddings (`all-MiniLM-L6-v2`) with exact-keyword lexical matching (`rank-bm25`).
-  * Normalizes and merges disparate score distributions using rank-based RRF ($k = 60$).
-* **Cross-Encoder Neural Reranking (Day 23)**:
-  * Ultra-fast local CPU reranker (`flashrank` / `ms-marco-TinyBERT-L-2-v2`) computing full cross-attention over `(query, passage)` pairs to eliminate first-stage retrieval noise.
-* **Strict Source Grounding & Attribution (Day 24)**:
-  * Enforces zero-hallucination system constraints; requires the LLM to provide verified inline citations (`[1]`, `[2]`).
-* **Empirical Golden Evaluation Benchmark (Days 27–29)**:
-  * Evaluated against 15 hand-curated institutional financial questions across `NVDA`, `AAPL`, and `TSLA`.
-  * Documented optimization improving retrieval hit rate from **86.7% (13/15)** to **100% (15/15)**.
-* **Phase 1 Foundations Retained**:
-  * Real-time fundamentals & price history via `yfinance`.
-  * Wilder's RSI (14-period) and SMA-20 / SMA-50 technical indicators computed from scratch using pandas.
-  * Resilient LLM client with streaming, exponential backoff retries, and Pydantic function calling.
+* **Hybrid Search with Reciprocal Rank Fusion (RRF) & Cross-Encoder Reranking**:
+  Dense vector embeddings (`sentence-transformers/all-MiniLM-L6-v2`) capture semantic similarity but often miss exact financial tickers, dates, or GAAP line items. StockSage runs dense search in parallel with an **Okapi BM25** lexical index (`rank-bm25`), merges both candidate rankings via **Reciprocal Rank Fusion** ($k=60$), and passes the top 20 candidates through a local CPU **FlashRank Cross-Encoder** (`ms-marco-TinyBERT-L-2-v2`) to compute full cross-attention over `(query, passage)` pairs—achieving **100% retrieval precision (15/15)** on our golden benchmark.
+* **Direct SEC EDGAR Regulatory Filing Ingestion**:
+  Connects directly to the SEC EDGAR JSON submissions directory (`efts.sec.gov`) without paid third-party wrappers. Resolves `Ticker ➔ 10-digit CIK ➔ Accession Number`, parses deeply nested XBRL/HTML documents via BeautifulSoup, and isolates **Item 1A (Risk Factors)** and **Item 2 / Item 7 (MD&A)** into a dedicated `filings` vector collection.
+* **From-Scratch Quantitative Financial Mathematics**:
+  Implements **Wilder's Smoothed RSI (14-period)**, **Simple Moving Averages (SMA-20, SMA-50)**, **Annualized Volatility** ($\sigma_{\text{annual}} = \sigma_{\text{daily}} \times \sqrt{252}$), **95% Historical Value at Risk ($\text{VaR}_{95\%}$)**, **Maximum Drawdown ($\text{MDD}$)**, and **Multi-Asset Pearson Correlation Matrices** directly in Python/NumPy/Pandas with hand-calculated unit test verification.
+* **Resilient Fault Tolerance & Graceful Degradation**:
+  Every agent node is isolated within defensive exception boundaries. If an upstream API (e.g., Yahoo Finance or Tavily) experiences an outage or rate limit, the node logs the failure to `state["error_log"]` via non-destructive state reducers and supplies an explicit `"unavailable"` marker—allowing the Analyst Agent to disclose missing data transparently rather than crashing the graph.
+* **Non-Blocking Async API & Real-Time WebSockets**:
+  Multi-agent synthesis takes 10–25 seconds. The FastAPI backend (`POST /v1/analysis`) immediately returns a `session_id` and schedules execution in background workers while broadcasting real-time node transitions (`supervisor_started`, `data_agent_completed`, `pending_approval`, `complete`) over `/v1/ws/{session_id}` and supporting interactive HITL approval resume via `POST /v1/analysis/{session_id}/approval`.
 
 ---
 
-## Phase 2: RAG Deep Dive (Days 16–30)
+## 4-Phase Engineering Architecture & File-by-File Reference
 
-| Day | Focus | Implementation | Key Deliverable |
-|:---|:---|:---|:---|
-| **Day 16** | RAG Fundamentals | [`docs/concepts/rag.md`](docs/concepts/rag.md) | Conceptual architecture and interview-ready RAG mental model. |
-| **Day 17** | Dense Embeddings | [`src/rag/embeddings.py`](src/rag/embeddings.py) | Local CPU embedding generation (`all-MiniLM-L6-v2`) with verified cosine similarity. |
-| **Day 18** | Vector Database | [`src/rag/vectorstore.py`](src/rag/vectorstore.py) | Persistent local ChromaDB store in `data/chroma/` with cosine distance space. |
-| **Day 19** | News Retriever | [`src/rag/retriever.py`](src/rag/retriever.py) | Connects Tavily search into ChromaDB with metadata isolation (ticker, URL, published date). |
-| **Day 20** | Document Chunking | [`src/rag/chunker.py`](src/rag/chunker.py) | Sliding-window word chunker (300 words, 50-word overlap) preserving numeric financial context. |
-| **Day 21** | BM25 Keyword Search | [`src/rag/bm25.py`](src/rag/bm25.py) | Okapi BM25 keyword index with specialized financial tokenization. |
-| **Day 22** | Hybrid Search (RRF) | [`src/rag/hybrid.py`](src/rag/hybrid.py) | Reciprocal Rank Fusion ($score = \sum \frac{1}{60 + rank}$) merging embedding and BM25 results. |
-| **Day 23** | Cross-Encoder Reranking | [`src/rag/reranker.py`](src/rag/reranker.py) | FlashRank cross-attention model pruning noisy candidates down to top relevant passages. |
-| **Day 24** | Full RAG Pipeline | [`src/rag/pipeline.py`](src/rag/pipeline.py) | Async end-to-end pipeline: index on-demand ➔ hybrid search ➔ rerank ➔ context format ➔ Groq generation with citations. |
-| **Day 25** | SEC EDGAR Ingestion | [`src/ingestion/edgar_client.py`](src/ingestion/edgar_client.py) | SEC JSON API client fetching 10-Q filings, parsing HTML, extracting MD&A + Risk Factors into ChromaDB. |
-| **Day 26** | Multi-Collection Retrieval | [`src/rag/retriever.py`](src/rag/retriever.py) | `route_query()` intelligently directs questions to `filings` or `news_chunks` with cross-collection fallback. |
-| **Day 27** | Golden Evaluation Dataset | [`evaluation/golden_dataset.json`](evaluation/golden_dataset.json) | 15 ground-truth institutional questions across NVDA, AAPL, and TSLA. |
-| **Day 28** | RAG Evaluation Harness | [`evaluation/evaluate.py`](evaluation/evaluate.py), [`evaluation/report.md`](evaluation/report.md) | Automated evaluation harness measuring baseline retrieval precision (13/15, 86.7%). |
-| **Day 29** | Retrieval Tuning | [`src/rag/pipeline.py`](src/rag/pipeline.py) | Tuned candidate depth ($k=10 \rightarrow 20$) and rerank cutoff ($top\_n=3 \rightarrow 4$), achieving **15/15 (100%)** accuracy. |
-| **Day 30** | Phase 2 News Agent | [`src/rag/news_agent.py`](src/rag/news_agent.py), [`docs/phase2_notes.md`](docs/phase2_notes.md) | Multi-ticker research agent checkpoint and comprehensive Phase 2 retrospective documentation. |
+The platform is architected across **four modular engineering phases**. Below is the complete technical reference for every file in the repository.
 
 ---
 
-## Phase 3: Multi-Agent Deep Dive (Days 31–50)
+### Phase 1: Core Foundations, Tool-Calling Loop & Data Ingestion
 
-| Day | Focus | Implementation | Key Deliverable |
-|:---|:---|:---|:---|
-| **Day 31–33** | Agent Concepts & LangGraph | [`docs/concepts/agents.md`](docs/concepts/agents.md), [`docs/concepts/langgraph.md`](docs/concepts/langgraph.md) | Formal ReAct agent model, specialist system prompts, state/node/edge mental model. |
-| **Day 34** | Shared State Schema | [`src/graph/state.py`](src/graph/state.py) | Typed `StockSageState` with metadata, market data, news context, risk metrics, and audit trail. |
-| **Day 35** | Data Agent Node | [`src/agents/data_agent.py`](src/agents/data_agent.py) | Node fetching real-time fundamentals, price series, RSI-14, and moving averages. |
-| **Day 36** | News Agent Node | [`src/agents/news_agent.py`](src/agents/news_agent.py) | Node executing Phase 2 hybrid RAG over Tavily news and SEC 10-Q corporate filings. |
-| **Day 37–38** | Quantitative Risk Agent | [`src/agents/risk_metrics.py`](src/agents/risk_metrics.py), [`src/agents/risk_agent.py`](src/agents/risk_agent.py) | Math engine computing Annualized Volatility, Historical VaR (95%), and Maximum Drawdown. |
-| **Day 39** | Analyst Agent Node | [`src/agents/analyst_agent.py`](src/agents/analyst_agent.py) | Node synthesizing quantitative data, news catalysts, and risk metrics into a structured report. |
-| **Day 40** | Multi-Agent StateGraph | [`src/graph/stocksage_graph.py`](src/graph/stocksage_graph.py) | Assembled end-to-end multi-agent LangGraph workflow. |
-| **Day 41** | Supervisor Conditional Routing | [`src/agents/supervisor.py`](src/agents/supervisor.py) | Intent classification routing simple queries directly or triggering multi-agent deep research. |
-| **Day 42** | Parallel Agent Fan-Out | [`src/graph/stocksage_graph.py`](src/graph/stocksage_graph.py) | Concurrent fan-out of Data Agent and News Agent reducing pipeline latency by ~50%. |
-| **Day 43** | Human-in-the-Loop (HITL) Gate | [`src/graph/stocksage_graph.py`](src/graph/stocksage_graph.py) | Interrupt review gate allowing analysts to inspect, modify, or approve gathered context. |
-| **Day 44** | Reflexion Critic & Refinement | [`src/agents/critic_agent.py`](src/agents/critic_agent.py) | Automated reviewer evaluating reports and routing back for targeted revision if score $< 80\%$. |
-| **Day 45** | State Persistence & Checkpoints | [`src/graph/stocksage_graph.py`](src/graph/stocksage_graph.py) | `SqliteSaver` checkpointer enabling thread pausing, resumption, and historical inspection. |
-| **Day 46** | Long-Term User Memory | [`src/graph/memory.py`](src/graph/memory.py) | Persistent SQLite memory storing past queries, ticker history, and user preferences across runs. |
-| **Day 47** | Multi-Ticker Portfolio Engine | [`src/graph/stocksage_graph.py`](src/graph/stocksage_graph.py) | Batch analysis across multiple tickers with cross-asset risk and correlation views. |
-| **Day 48** | Streaming Intermediate Events | [`src/graph/stocksage_graph.py`](src/graph/stocksage_graph.py) | Async streaming generator emitting real-time agent lifecycle and thought updates. |
-| **Day 49** | Graph Visualizer | [`src/graph/stocksage_graph.py`](src/graph/stocksage_graph.py) | Programmatic Mermaid ASCII/graph export tool. |
-| **Day 50** | Multi-Agent Retrospective | [`docs/phase3_notes.md`](docs/phase3_notes.md) | Complete multi-agent milestone audit, architecture diagrams, and lessons learned. |
+Phase 1 establishes the core LLM communication layer, deterministic Pydantic boundary validation, manual and automated function-calling tool dispatchers, and real-time market/news ingestion clients.
+
+| File Path | Engineering Responsibility & Key Implementation Details |
+|:---|:---|
+| [`src/core/config.py`](src/core/config.py) | **Environment & Settings Manager**: Uses Pydantic `BaseSettings` (`SettingsConfigDict(env_file=".env", extra="allow")`) to validate API credentials (`GROQ_API_KEY`, `TAVILY_API_KEY`, `LANGCHAIN_API_KEY`) at startup so missing secrets fail fast at application boot. |
+| [`src/core/llm/client.py`](src/core/llm/client.py) | **Resilient Groq LLM Client**: Wraps the Groq SDK with three production primitives: synchronous completions (`get_llm_response`), real-time token streaming (`_stream_completion` with delta accumulation and final chunk token usage reporting), and **exponential backoff retries** (`_call_with_backoff` catching `APIConnectionError`, `APITimeoutError`, and `RateLimitError` across 2s ➔ 4s intervals). |
+| [`src/chat.py`](src/chat.py) | **Multi-Turn Financial CLI Assistant**: Interactive command-line chat loop maintaining stateful message history (`system`, `user`, `assistant` roles) governed by a strict institutional financial analyst persona. |
+| [`src/core/schema.py`](src/core/schema.py) | **Core Pydantic Data Models**: Defines strict boundary schemas (`StockData` with `ticker`, `price`, `pe_ratio`) enforcing type validation and `.model_dump()` / `.model_validate()` serialization round-trips. |
+| [`src/core/structured.py`](src/core/structured.py) | **Forced Structured Output Extractor**: Implements `extract(prompt, schema) -> BaseModel`. Dynamically converts any Pydantic model's `.model_json_schema()` into an OpenAI/Groq tool declaration and sets `tool_choice={"type": "function", "function": {"name": ...}}` to guarantee 100% schema-validated JSON output. |
+| [`src/core/tool_calling.py`](src/core/tool_calling.py) | **Single-Turn Tool Execution Harness**: Demonstrates the foundational tool-calling protocol: exposes `get_current_price(ticker)` with a JSON tool schema to Groq, intercepts `tool_calls` blocks, executes the live Python function via `yfinance`, and returns the observation to the LLM. |
+| [`src/core/tools.py`](src/core/tools.py) | **General ReAct Tool Dispatcher & Agent Loop**: Implements `ToolDispatcher` (a registry mapping tool names and normalized JSON schemas to Python callables) and `run_agent()`, a multi-step agentic `while` loop capable of chaining multiple tools (`get_current_price`, `get_pe_ratio`) with a hard `MAX_ITERATIONS = 5` safety guard against infinite loops. |
+| [`src/ingestion/yfinance_client.py`](src/ingestion/yfinance_client.py) | **Yahoo Finance Market Data Client**: Production data access layer exposing `get_fundamentals(ticker) -> CompanyFundamentals` (15 validated fields including market cap, trailing/forward P/E, 52-week range, sector) and `get_price_history(ticker, period) -> PriceHistory` (chronological `PriceBar` OHLCV models with `NaN`-safe float coercion). |
+| [`src/ingestion/explore_yfinance.py`](src/ingestion/explore_yfinance.py) | **Yahoo Finance Schema Inspector**: Diagnostic script inspecting raw `.info` dictionary keys and `.history()` DataFrame structures returned by `yfinance`. |
+| [`src/ingestion/explore_pandas.py`](src/ingestion/explore_pandas.py) | **Time-Series DataFrame Pipeline**: Financial time-series transformations using `pandas`—date-window slicing, `.dropna()` / `.ffill()` missing-data imputation, and rolling window aggregations. |
+| [`src/ingestion/technical.py`](src/ingestion/technical.py) | **From-Scratch Technical Indicators Engine**: Implements `compute_rsi(prices, period=14)` using **Wilder's Smoothed Moving Average (SMMA)** method (handling zero-gain/zero-loss edge cases), `compute_moving_averages(prices)` for 20-day and 50-day SMAs, and `get_technical_signals(ticker)` returning a validated `TechnicalSignals` model. |
+| [`src/ingestion/tavily_client.py`](src/ingestion/tavily_client.py) | **Tavily Financial News Client**: Implements `search_news(ticker)` and `filter_recent(results, max_age_days=30)` with a multi-format date parser (ISO-8601 + RFC-2822 fallback) to drop stale articles. |
+| [`src/pipeline.py`](src/pipeline.py) | **Phase 1 End-to-End Integration Pipeline**: Chains fundamentals, 6-month OHLCV history, Wilder's RSI/SMA signals, and recent Tavily news into a single prompt and extracts a validated `TickerSummary` (`ticker`, `summary`, `sentiment`) via forced function calling. |
 
 ---
 
-## Phase 4: Full Stack & Deployment (Days 51–68)
+### Phase 2: Hybrid RAG Engine, SEC EDGAR & Golden Evaluation
 
-| Day | Focus | Implementation | Key Deliverable |
-|:---|:---|:---|:---|
-| **Day 51–52** | FastAPI Core & Validation | [`src/api/main.py`](src/api/main.py) | REST API endpoints with Pydantic request/response validation and OpenAPI Swagger documentation. |
-| **Day 53–54** | LangGraph API Integration | [`src/api/main.py`](src/api/main.py) | Connecting async graph execution and background task processing for asynchronous report jobs. |
-| **Day 55** | WebSocket Event Streaming | [`src/api/main.py`](src/api/main.py) | Real-time bi-directional WebSocket streaming node transitions and progress logs to frontends. |
-| **Day 56** | API Security & Rate Limiting | [`src/api/main.py`](src/api/main.py) | `X-API-Key` authentication and sliding-window rate limiting (10 req/min). |
-| **Day 57–59** | Streamlit UI & Visuals | [`demo/app.py`](demo/app.py) | Interactive web dashboard with stock metrics, risk cards, Plotly charts, and markdown exports. |
-| **Day 60–61** | Docker & Compose | [`Dockerfile`](Dockerfile), [`docker-compose.yml`](docker-compose.yml) | Multi-stage container builds orchestrating FastAPI (`:8000`) and Streamlit (`:8501`). |
-| **Day 62** | Full API Test Suite | [`tests/test_api.py`](tests/test_api.py) | 36 automated tests covering authentication, rate limiting, error codes, and endpoints. |
-| **Day 63** | GitHub Actions CI | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | Automated CI pipeline running pytest on every push and pull request. |
-| **Day 64** | LangSmith Observability | [`src/core/config.py`](src/core/config.py) | Zero-overhead distributed tracing and token cost monitoring via LangSmith. |
-| **Day 65** | Phase 4 Integration | [`docs/phase4_notes.md`](docs/phase4_notes.md) | Verified end-to-end full-stack integration connecting Streamlit to Dockerized API. |
-| **Day 66** | Cloud Backend Deployment | [`src/api/main.py`](src/api/main.py), [`requirements.txt`](requirements.txt) | Dynamic `$PORT` resolution and health-check optimizations for Railway / Render hosting. |
-| **Day 67** | Cloud Streamlit Deployment | [`demo/app.py`](demo/app.py) | Multi-environment secrets fallback (`st.secrets` ➔ `os.getenv`) for Streamlit Cloud. |
-| **Day 68** | Institutional Documentation | [`README.md`](README.md) | Architecture diagram, quickstart instructions, and non-trivial engineering highlights. |
+Phase 2 builds a dual-collection Retrieval-Augmented Generation (RAG) engine combining dense embeddings, sparse BM25 keyword search, Reciprocal Rank Fusion, cross-encoder neural reranking, and official SEC EDGAR filings, verified by a deterministic evaluation suite.
+
+| File Path | Engineering Responsibility & Key Implementation Details |
+|:---|:---|
+| [`src/rag/embeddings.py`](src/rag/embeddings.py) | **Local Dense Embedding Engine**: Wraps `sentence-transformers/all-MiniLM-L6-v2` (384-dimensional vectors) using a lazy-loaded singleton pattern for zero-cost local CPU inference and includes manual NumPy cosine similarity verification. |
+| [`src/rag/vectorstore.py`](src/rag/vectorstore.py) | **ChromaDB Persistent Vector Store**: Manages persistent local vector collections (`data/chroma/`) configured with cosine distance space (`hnsw:space = "cosine"`). Exposes idempotent `add_documents()` (upsert) and metadata-filtered `query_collection()`. |
+| [`src/rag/chunker.py`](src/rag/chunker.py) | **Sliding-Window Word Chunker**: Splits long financial articles and SEC filings into 300-word chunks with a 50-word sliding overlap (`chunk_text` and `chunk_documents`), preserving numerical figures and multi-sentence financial context across chunk boundaries. |
+| [`src/rag/retriever.py`](src/rag/retriever.py) | **Multi-Collection Semantic Retriever & Query Router**: Connects live Tavily news and SEC filings to ChromaDB (`index_ticker_news`, `retrieve`). Implements `route_query(query, ticker)` to route timely queries to `news_chunks` and statutory queries to `filings`, with automatic cross-collection fallback if confidence falls below `FILINGS_MIN_SCORE = 0.35`. |
+| [`src/rag/bm25.py`](src/rag/bm25.py) | **Okapi BM25 Lexical Retriever**: Builds an on-demand `BM25Okapi` index over a ticker's stored ChromaDB chunks using a specialized financial tokenizer that preserves ticker symbols, GAAP numbers, and percentages while stripping possessives and punctuation. |
+| [`src/rag/hybrid.py`](src/rag/hybrid.py) | **Reciprocal Rank Fusion (RRF) Merger**: Executes dense semantic search and sparse BM25 search concurrently and merges their ranked lists using score-agnostic RRF ($\text{score}(d) = \sum \frac{1}{60 + \text{rank}(d)}$), overcoming distribution skew between unbounded BM25 scores and cosine similarity. |
+| [`src/rag/reranker.py`](src/rag/reranker.py) | **FlashRank Cross-Encoder Reranker**: Wraps `ms-marco-TinyBERT-L-2-v2` to re-score candidate chunks via joint query-passage cross-attention, distilling noisy top-20 hybrid candidates down to the top-4 highest-precision passages. |
+| [`src/rag/pipeline.py`](src/rag/pipeline.py) | **Unified Async RAG Pipeline**: Exposes `get_context(query, ticker)` and `answer_question(query, ticker)`. Orchestrates auto-indexing, collection routing, hybrid RRF retrieval ($k=20$), FlashRank reranking ($top\_n=4$), and grounded Groq synthesis with mandatory `[1]`, `[2]` source citations. |
+| [`src/ingestion/edgar_client.py`](src/ingestion/edgar_client.py) | **SEC EDGAR 10-Q/10-K Filing Parser & Indexer**: Queries `sec.gov/files/company_tickers.json` and `data.sec.gov/submissions/` with SEC-compliant `User-Agent` headers. Downloads raw 10-Q/10-K HTML filings, strips inline XBRL tags, extracts **Risk Factors (Item 1A)** and **MD&A (Item 2/7)** via longest-span regex matching, chunks the text, and indexes into the `filings` ChromaDB collection. |
+| [`src/rag/news_agent.py`](src/rag/news_agent.py) | **Standalone News & Filings Research Agent**: End-to-end RAG CLI agent that ingests fresh news and filings for single or multiple tickers (`--all`) and generates source-cited risk and catalyst briefs. |
+| [`evaluation/golden_dataset.json`](evaluation/golden_dataset.json) | **Golden Evaluation Dataset**: 15 hand-curated institutional benchmark questions across `NVDA`, `AAPL`, and `TSLA` (spanning both breaking news and 10-Q statutory facts) paired with expected ground-truth facts and target collections. |
+| [`evaluation/corpus_snapshot.json`](evaluation/corpus_snapshot.json) | **Deterministic Evaluation Corpus**: Frozen snapshot of news and SEC 10-Q chunks for `NVDA`, `AAPL`, and `TSLA` ensuring 100% reproducible RAG benchmarking across runs. |
+| [`evaluation/build_snapshot.py`](evaluation/build_snapshot.py) | **Corpus Snapshot Utility**: Exports and re-hydrates ChromaDB collections to/from `corpus_snapshot.json`. |
+| [`evaluation/evaluate.py`](evaluation/evaluate.py) | **Automated RAG Evaluation Harness**: Runs all 15 golden dataset queries through the full RAG pipeline and scores collection routing accuracy, chunk retrieval hit rate, and LLM factual answer fidelity. |
+| [`evaluation/report.md`](evaluation/report.md) | **Empirical RAG Optimization Report**: Documents baseline evaluation (86.7% retrieval hit rate), root-cause failure diagnosis on boundary cutoffs, and parameter tuning ($k: 10 \rightarrow 20$, $top\_n: 3 \rightarrow 4$) that achieved **100% (15/15) retrieval and answer accuracy**. |
 
 ---
 
-## Project Directory Structure
+### Phase 3: Multi-Agent LangGraph Orchestration & Quantitative Risk
 
-```
+Phase 3 elevates StockSage into an autonomous multi-agent system coordinated by LangGraph, featuring conditional supervisor routing, parallel execution branches, quantitative risk modeling, SQLite checkpoint persistence, Human-in-the-Loop gates, cross-session memory, multi-ticker portfolio correlation analysis, and Reflexion self-correction.
+
+| File Path | Engineering Responsibility & Key Implementation Details |
+|:---|:---|
+| [`src/core/langchain_basics.py`](src/core/langchain_basics.py) | **LangChain & LCEL Abstractions**: Wraps `ChatGroq`, `ChatPromptTemplate`, and `StrOutputParser` into declarative LCEL pipelines (`prompt \| client \| parser`) and benchmarks framework abstractions against manual client plumbing. |
+| [`src/graph/intro.py`](src/graph/intro.py) | **LangGraph State Machine Primitives**: Reference implementation demonstrating typed state containers (`SimpleCountState`), pure node functions, and directed graph compilation (`StateGraph`). |
+| [`src/graph/state.py`](src/graph/state.py) | **Shared Multi-Agent State Schema (`StockSageState`)**: Defines the central `TypedDict` flowing across all nodes (`ticker`, `user_query`, `route`, `stock_data`, `news_context`, `risk_metrics`, `final_report`, `revision_count`, `critique`, `human_feedback`) with custom non-destructive state reducers (`append_error`, `append_history`) so parallel nodes never overwrite each other's updates. |
+| [`src/agents/supervisor.py`](src/agents/supervisor.py) | **Supervisor & Intent Router Node**: Analyzes user queries and in-session `conversation_history` (resolving pronouns like *"What is its P/E?"* to the active ticker) and outputs a validated `SupervisorDecision` selecting `data_only`, `news_only`, or `full_analysis`. |
+| [`src/agents/data_agent.py`](src/agents/data_agent.py) | **Data Agent Node (`data_agent_node`)**: Asynchronous LangGraph node that fetches company fundamentals, 6-month closing price series, and Wilder's RSI/SMA technical indicators via `asyncio.to_thread`, writing validated `StockDataPayload` into state with graceful fallback on error. |
+| [`src/agents/news_agent.py`](src/agents/news_agent.py) | **News & Filings Agent Node (`news_agent_node`)**: Asynchronous LangGraph node wrapping the Phase 2 Hybrid RAG + FlashRank pipeline over Tavily news and SEC 10-Q filings, attaching numbered, source-attributed context passages to `state["news_context"]`. |
+| [`src/agents/risk_metrics.py`](src/agents/risk_metrics.py) | **Quantitative Risk Mathematics Module**: Pure mathematical implementation of `compute_daily_returns()`, `compute_volatility()` (annualized std dev $\times \sqrt{252}$), `compute_var()` (95% Historical Simulation Value at Risk), and `compute_max_drawdown()` (peak-to-trough decline). |
+| [`src/agents/risk_agent.py`](src/agents/risk_agent.py) | **Risk Agent Node (`risk_agent_node`)**: Computes quantitative risk metrics from `state["stock_data"]["closes"]`, combines them with equity Beta, classifies overall risk into qualitative tiers (`Low`, `Moderate`, `Elevated`, `High`), and writes `RiskMetricsPayload` to state. |
+| [`src/agents/analyst_agent.py`](src/agents/analyst_agent.py) | **Analyst Synthesis Node (`analyst_agent_node`)**: Synthesizes `stock_data`, `news_context`, `risk_metrics`, `user_context`, and any `human_feedback` or `critique` into a structured `StockReport` (`summary`, `bull_case`, `bear_case`, `risk_rating`) plus formatted institutional Markdown. Automatically detects and discloses any degraded/missing upstream data streams. |
+| [`src/agents/critic_node.py`](src/agents/critic_node.py) | **Reflexion Critic Node (`critic_node`)**: Audits the Analyst's draft report against a 1–5 institutional rubric (`CriticEvaluation`: completeness, citation quality, quantitative precision, bull/bear balance) and triggers a self-correction loop (`should_revise_report`) back to the Analyst if `score < 4` (up to `MAX_REVISIONS = 2`). |
+| [`src/graph/stocksage_graph.py`](src/graph/stocksage_graph.py) | **Master Multi-Agent StateGraph (`build_stocksage_graph`)**: Wires all specialist nodes together with conditional Supervisor routing, **parallel fan-out** (`data_agent` + `news_agent`), **Human-in-the-Loop `interrupt()` gate** (`human_review_node`), **Reflexion Critic loop**, and **SQLite checkpoint persistence** (`SqliteSaver` / `AsyncSqliteSaver`). |
+| [`src/graph/memory.py`](src/graph/memory.py) | **Cross-Session Long-Term Memory (`UserMemoryStore`)**: Persistent SQLite store (`data/user_memory.db`) tracking analyzed tickers, query timestamps, and user risk/style preferences across separate application runs, injecting `user_context` at graph initialization. |
+| [`src/graph/portfolio.py`](src/graph/portfolio.py) | **Multi-Ticker Portfolio & Correlation Engine**: Executes `data_agent` and `risk_agent` across multiple tickers in parallel via `asyncio.gather`, computes a full **pairwise Pearson correlation matrix** over daily return series, and evaluates portfolio-level diversification (`Strong`, `Moderate`, `Low`). |
+
+---
+
+### Phase 4: Full-Stack FastAPI Backend, Streamlit UI, Docker & CI/CD
+
+Phase 4 exposes the multi-agent engine via an authenticated asynchronous FastAPI web server with live WebSockets, an interactive Streamlit financial dashboard with Plotly charts and HITL controls, Docker containerization, pre-flight diagnostics, and automated GitHub Actions CI.
+
+| File Path | Engineering Responsibility & Key Implementation Details |
+|:---|:---|
+| [`src/api/main.py`](src/api/main.py) | **Production FastAPI Backend**: Implements `GET /health`, `GET /ping/{ticker}`, `POST /v1/analysis` (non-blocking background task execution), `GET /v1/analysis/{session_id}` (status & report polling), `POST /v1/analysis/{session_id}/approval` (resumes paused HITL sessions), and `WS /v1/ws/{session_id}` (real-time agent milestone streaming via `ConnectionManager`), secured by `X-API-Key` authentication (`verify_api_key`). |
+| [`api/main.py`](api/main.py) | **Root ASGI Entrypoint Forwarding Wrapper**: Re-exports `app` and `main` from `src.api.main` so standard deployment commands (`uvicorn api.main:app`) work seamlessly out of the box. |
+| [`demo/app.py`](demo/app.py) | **Streamlit Interactive Financial Dashboard**: Full-featured web frontend featuring sidebar API health checks, multi-environment secrets resolution (`st.secrets` ➔ `os.getenv`), interactive **Plotly 6-Month Price Trajectory charts**, **Plotly RSI-14 momentum gauges** (with Oversold/Neutral/Overbought zones), **clickable Human-in-the-Loop Approve / Request Revision controls**, and structured report rendering. |
+| [`Dockerfile`](Dockerfile) | **Production Container Image**: Fast, layer-cached `python:3.12-slim` image powered by `uv sync --frozen`, pre-configuring `PYTHONPATH=/app/src`, local data directories, and native `/health` container checks. |
+| [`docker-compose.yml`](docker-compose.yml) | **Multi-Container Stack Orchestration**: Defines `stocksage-api` (`:8000`) and `stocksage-ui` (`:8501`) services with shared `./data:/app/data` volume mounts for persistent ChromaDB vectors and SQLite checkpoints, healthcheck dependencies, and `.env` injection. |
+| [`requirements.txt`](requirements.txt) | **Cloud Platform Dependency Lock**: Pinned dependency export for PaaS deployments (Railway, Render, Streamlit Community Cloud). |
+| [`check_health.py`](check_health.py) | **9-Point Pre-Flight System & API Diagnostic Tool**: Audits Python 3.12+ runtime, `.venv` path integrity, `.env` keys, live Groq model availability, Tavily quota, SEC EDGAR User-Agent compliance, Yahoo Finance feeds, local `all-MiniLM-L6-v2` embeddings, ChromaDB read/write permissions, and FlashRank cross-encoder loading. |
+| [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | **GitHub Actions CI Pipeline**: Automatically provisions Ubuntu + Python 3.12 + `uv` on every push and pull request to `main`, running all offline unit and graph tests (`pytest -m "not integration"`). |
+
+---
+
+## Complete Repository Directory Tree
+
+```text
 StockSage/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml                # Day 63 — GitHub Actions CI pipeline
-├── Dockerfile                    # Day 60 — Multi-stage production container build
-├── docker-compose.yml            # Day 61 — Multi-container orchestration (FastAPI + Streamlit)
-├── requirements.txt              # Day 66 — Exported dependency lock for cloud platforms
-├── pyproject.toml                # Project metadata, dependencies, and test configurations
-├── uv.lock                       # Deterministic dependency lockfile
-├── README.md                     # Comprehensive institutional documentation
-├── .env.example                  # Environment secrets template
-│
-├── src/                          # Application source code
-│   ├── chat.py                   # Day 3  — Multi-turn financial CLI chatbot
-│   ├── pipeline.py               # Day 15 — Phase 1 end-to-end fundamentals pipeline
-│   │
-│   ├── core/                     # LLM client, schemas, and tool calling
-│   │   ├── config.py             # Day 1, 64 — Pydantic BaseSettings & LangSmith config
-│   │   ├── schema.py             # Day 4  — Core Pydantic data schemas
-│   │   ├── structured.py         # Day 5  — Function-calling structured extraction
-│   │   ├── tool_calling.py       # Day 6  — Tool calling runner
-│   │   ├── tools.py              # Day 7  — Reusable ToolDispatcher agent loop
+│       └── ci.yml                        # Automated GitHub Actions CI pipeline
+├── api/
+│   ├── __init__.py
+│   └── main.py                           # Root FastAPI ASGI entrypoint wrapper
+├── demo/
+│   └── app.py                            # Interactive Streamlit UI, Plotly charts & HITL review gate
+├── docs/
+│   ├── phase1_notes.md                   # Phase 1 technical reference & engineering retrospective
+│   ├── phase2_notes.md                   # Phase 2 RAG architecture reference & evaluation tuning
+│   ├── phase3_notes.md                   # Phase 3 multi-agent system reference & state design
+│   ├── phase4_notes.md                   # Phase 4 full-stack deployment & observability reference
+│   └── concepts/
+│       ├── agents.md                     # ReAct agent loop & transformer probability formulation
+│       ├── langgraph.md                  # Deterministic StateGraph, nodes, edges & reducers
+│       └── rag.md                        # Retrieval-Augmented Generation architecture notes
+├── evaluation/
+│   ├── build_snapshot.py                 # ChromaDB evaluation corpus snapshot builder
+│   ├── corpus_snapshot.json              # Frozen deterministic corpus for NVDA, AAPL, TSLA
+│   ├── evaluate.py                       # Automated RAG benchmark evaluation runner
+│   ├── golden_dataset.json               # 15 ground-truth financial research benchmark questions
+│   └── report.md                         # Documented optimization report (86.7% -> 100% precision)
+├── src/
+│   ├── __init__.py
+│   ├── chat.py                           # Multi-turn CLI financial chatbot
+│   ├── pipeline.py                       # Phase 1 end-to-end data + structured LLM summary pipeline
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── config.py                     # Pydantic BaseSettings environment loader
+│   │   ├── langchain_basics.py           # LangChain ChatGroq & LCEL pipeline abstractions
+│   │   ├── schema.py                     # Core Pydantic data validation schemas
+│   │   ├── structured.py                 # Forced function-calling structured output extractor
+│   │   ├── tool_calling.py               # Single-step live yfinance tool calling harness
+│   │   ├── tools.py                      # Reusable ToolDispatcher & multi-step ReAct loop
 │   │   └── llm/
-│   │       └── client.py         # Day 2, 12, 13 — Groq client with backoff & streaming
-│   │
-│   ├── ingestion/                # Market data & regulatory filings connectors
-│   │   ├── edgar_client.py       # Day 25 — SEC EDGAR 10-Q/10-K filing parser & indexer
-│   │   ├── tavily_client.py      # Day 11 — Tavily financial news search client
-│   │   ├── technical.py          # Day 10 — Wilder's RSI, SMA-20, SMA-50 technical engine
-│   │   └── yfinance_client.py    # Day 8  — Validated stock fundamentals & price history
-│   │
-│   ├── rag/                      # Phase 2: RAG & Information Retrieval Engine
-│   │   ├── bm25.py               # Day 21 — Okapi BM25 lexical keyword search
-│   │   ├── chunker.py            # Day 20 — 300-word / 50-word overlap document chunker
-│   │   ├── embeddings.py         # Day 17 — Local sentence-transformers embedding generator
-│   │   ├── hybrid.py             # Day 22 — Reciprocal Rank Fusion (RRF) search merger
-│   │   ├── news_agent.py         # Day 30 — Phase 2 Checkpoint: Multi-ticker News RAG agent
-│   │   ├── pipeline.py           # Day 24, 29 — Async end-to-end multi-collection RAG pipeline
-│   │   ├── reranker.py           # Day 23 — FlashRank neural cross-encoder reranker
-│   │   ├── retriever.py          # Day 19, 26 — Semantic retriever with collection routing
-│   │   └── vectorstore.py        # Day 18 — Persistent ChromaDB vector store wrapper
-│   │
-│   ├── agents/                   # Phase 3: LangGraph Specialist Agent Nodes
-│   │   ├── data_agent.py         # Day 35 — Market data & technical indicators node
-│   │   ├── news_agent.py         # Day 36 — Phase 2 RAG integration node
-│   │   ├── risk_metrics.py       # Day 37 — From-scratch Volatility, VaR 95%, Max Drawdown
-│   │   ├── risk_agent.py         # Day 38 — Quantitative risk engine node
-│   │   ├── analyst_agent.py      # Day 39 — Institutional report synthesis node
-│   │   ├── supervisor.py         # Day 41 — Structured output intent routing supervisor
-│   │   └── critic_agent.py       # Day 44 — Reflexion quality, grounding & critique node
-│   │
-│   ├── graph/                    # Phase 3: LangGraph State Machine & Orchestration
-│   │   ├── state.py              # Day 34 — Typed StockSageState schema
-│   │   ├── stocksage_graph.py    # Days 40–49 — Multi-agent StateGraph with HITL & parallel fan-out
-│   │   └── memory.py             # Day 46 — SQLite cross-session long-term memory store
-│   │
-│   └── api/                      # Phase 4: Production FastAPI Web Backend
-│       └── main.py               # Days 51–56, 66 — REST endpoints, WebSockets, auth, rate limiting
-│
-├── demo/                         # Phase 4: Interactive Web UI
-│   └── app.py                    # Days 57–59, 67 — Streamlit UI with Plotly charts & secrets fallback
-│
-├── evaluation/                   # RAG Evaluation Suite & Golden Benchmarks
-│   ├── build_snapshot.py         # Day 27 — Corpus snapshot builder
-│   ├── corpus_snapshot.json      # Day 27 — Frozen corpus for NVDA, AAPL, TSLA
-│   ├── evaluate.py               # Day 28, 29 — Automated evaluation execution harness
-│   ├── golden_dataset.json       # Day 27 — 15 ground-truth benchmark questions
-│   └── report.md                 # Day 28, 29 — Quantitative evaluation report (100% precision)
-│
-├── tests/                        # Automated Test Suite (114+ unit tests)
-│   ├── test_api.py               # Day 62 — FastAPI test suite (36 tests)
-│   ├── test_agents.py            # Days 35–44 — Specialist agent nodes & risk math tests
-│   ├── test_graph.py             # Days 40–45 — Multi-agent graph execution & HITL tests
-│   ├── test_rag.py               # Days 20–22 — Chunker, BM25 tokenizer, RRF tests
-│   ├── test_technical.py         # Day 14 — Hand-calculated Wilder's RSI & MA tests
-│   ├── test_schema.py            # Day 14 — Pydantic schema validation tests
-│   ├── test_structured.py        # Day 14 — Function-calling extraction tests
-│   ├── test_tools.py             # Day 14 — ToolDispatcher agent loop safety tests
-│   └── test_yfinance_client.py   # Day 14 — Yahoo Finance data model validation tests
-│
-└── docs/                         # Engineering Retrospectives & Architecture Notes
-    ├── phase1_notes.md           # Day 15 — Phase 1 retrospective & reference guide
-    ├── phase2_notes.md           # Day 30 — Phase 2 architecture retrospective & evaluation tuning
-    ├── phase3_notes.md           # Day 50 — Phase 3 multi-agent architecture retrospective
-    ├── phase4_notes.md           # Day 65 — Phase 4 full-stack integration & deployment retrospective
-    └── concepts/                 # In-depth architectural concept whitepapers
-        ├── agents.md             # Day 31 — ReAct agent theory & tool loops
-        ├── langgraph.md          # Day 33 — LangGraph state, nodes, and edges model
-        └── rag.md                # Day 16 — Plain-English explanation of RAG
+│   │       ├── __init__.py
+│   │       └── client.py                 # Groq client with streaming & exponential backoff retries
+│   ├── ingestion/
+│   │   ├── __init__.py
+│   │   ├── edgar_client.py               # SEC EDGAR 10-Q/10-K HTML parser & ChromaDB indexer
+│   │   ├── explore_pandas.py             # Pandas financial time-series exploration utility
+│   │   ├── explore_yfinance.py           # Yahoo Finance payload inspection script
+│   │   ├── tavily_client.py              # Tavily news search client with 30-day recency filter
+│   │   ├── technical.py                  # From-scratch Wilder's RSI-14, SMA-20 & SMA-50 engine
+│   │   └── yfinance_client.py            # Validated CompanyFundamentals & PriceHistory client
+│   ├── rag/
+│   │   ├── __init__.py
+│   │   ├── bm25.py                       # Okapi BM25 lexical search with financial tokenizer
+│   │   ├── chunker.py                    # 300-word sliding window chunker with 50-word overlap
+│   │   ├── embeddings.py                 # Local CPU sentence-transformers (all-MiniLM-L6-v2)
+│   │   ├── hybrid.py                     # Reciprocal Rank Fusion (RRF) hybrid retriever
+│   │   ├── news_agent.py                 # Standalone multi-ticker RAG research CLI agent
+│   │   ├── pipeline.py                   # End-to-end async multi-collection RAG pipeline
+│   │   ├── reranker.py                   # FlashRank cross-encoder neural reranker
+│   │   ├── retriever.py                  # Multi-collection semantic retriever & query router
+│   │   └── vectorstore.py                # Persistent ChromaDB vector store wrapper
+│   ├── agents/
+│   │   ├── __init__.py
+│   │   ├── analyst_agent.py              # Executive synthesis node with graceful degradation
+│   │   ├── critic_node.py                # Reflexion self-evaluation & iterative critique node
+│   │   ├── data_agent.py                 # Market fundamentals & technical signals LangGraph node
+│   │   ├── news_agent.py                 # Hybrid RAG & SEC filings LangGraph node
+│   │   ├── risk_agent.py                 # Quantitative risk classification LangGraph node
+│   │   ├── risk_metrics.py               # Annualized Volatility, 95% Historical VaR, Max Drawdown
+│   │   └── supervisor.py                 # Intent router & conversational pronoun resolver
+│   ├── graph/
+│   │   ├── __init__.py
+│   │   ├── intro.py                      # Minimal StateGraph reference implementation
+│   │   ├── memory.py                     # Cross-session SQLite long-term UserMemoryStore
+│   │   ├── portfolio.py                  # Concurrent multi-ticker portfolio & correlation engine
+│   │   ├── state.py                      # Typed StockSageState & concurrency-safe reducers
+│   │   └── stocksage_graph.py            # Compiled multi-agent graph with parallel fan-out & HITL
+│   └── api/
+│       ├── __init__.py
+│       └── main.py                       # FastAPI REST, background tasks, WebSockets & API auth
+├── tests/                                # 22 modular test files (114+ offline unit tests)
+│   ├── test_analyst_agent.py             # Analyst synthesis & structured report tests
+│   ├── test_api.py                       # FastAPI endpoints, auth, HITL & background task tests
+│   ├── test_critic.py                    # Reflexion critic rubric & revision loop routing tests
+│   ├── test_data_agent.py                # Data Agent node execution tests
+│   ├── test_graceful_degradation.py      # Partial report resilience under simulated API outages
+│   ├── test_hitl.py                      # LangGraph interrupt() approval & revision gate tests
+│   ├── test_intro_graph.py               # Foundational StateGraph transition tests
+│   ├── test_langchain_basics.py          # LCEL chain & prompt template tests
+│   ├── test_long_term_memory.py          # Cross-session SQLite UserMemoryStore persistence tests
+│   ├── test_memory.py                    # In-session multi-turn conversation memory tests
+│   ├── test_news_agent.py                # News Agent RAG node integration tests
+│   ├── test_parallel_graph.py            # Parallel fan-out latency & state merge tests
+│   ├── test_persistence.py               # SqliteSaver thread checkpointing & recovery tests
+│   ├── test_portfolio.py                 # Multi-ticker Pearson correlation & portfolio risk tests
+│   ├── test_rag.py                       # Chunker, BM25 financial tokenizer & RRF math tests
+│   ├── test_risk_agent.py                # Risk Agent node & qualitative tier tests
+│   ├── test_risk_metrics.py              # Hand-verified Volatility, VaR 95% & Max Drawdown tests
+│   ├── test_schema.py                    # Pydantic schema validation & serialization tests
+│   ├── test_state.py                     # StockSageState initialization & reducer tests
+│   ├── test_stocksage_graph.py           # End-to-end StateGraph execution tests
+│   ├── test_structured.py                # Forced tool-choice structured extraction tests
+│   ├── test_supervisor.py                # Supervisor conditional routing & pronoun resolution tests
+│   ├── test_technical.py                 # Hand-calculated Wilder's RSI & SMA verification tests
+│   ├── test_tools.py                     # ToolDispatcher registry & max-iteration safety cap tests
+│   └── test_yfinance_client.py           # Yahoo Finance Pydantic model & history tests
+├── check_health.py                       # 9-point pre-flight environment & API diagnostic script
+├── Dockerfile                            # Production container build with uv & Python 3.12
+├── docker-compose.yml                    # Full-stack multi-container orchestration (API + UI)
+├── pyproject.toml                        # Project metadata, dependencies & pytest configuration
+├── requirements.txt                      # Exported dependencies for cloud hosting
+└── uv.lock                               # Deterministic dependency lockfile
 ```
 
 ---
 
-## Prerequisites & Environment Setup
+## RAG Benchmarking & Empirical Evaluation
 
-* **Python 3.12+**
-* **[uv](https://docs.astral.sh/uv/)** (recommended: ultra-fast Python package and project manager) or standard `pip`
-* **Docker & Docker Compose** (optional: for containerized deployment)
-* **API Keys**:
-  * [Groq Cloud Console](https://console.groq.com/) — Free, ultra-fast LLM inference (`llama-3.3-70b-versatile`).
-  * [Tavily AI](https://tavily.com/) — 1,000 free monthly agentic news search queries.
-  * *(Optional)* [LangSmith](https://smith.langchain.com/) — Distributed tracing and token cost monitoring.
-  * *(Optional)* SEC EDGAR requires no API key; customizable `SEC_USER_AGENT` header included.
+Rather than relying on subjective "vibe checks," the StockSage RAG engine is benchmarked against a deterministic **15-question Golden Dataset** ([`evaluation/golden_dataset.json`](evaluation/golden_dataset.json)) covering `NVDA`, `AAPL`, and `TSLA` across both recent market news and statutory 10-Q SEC filings.
+
+| Metric | Baseline Configuration ($k=10, \text{top\_n}=3$) | Optimized Configuration ($k=20, \text{top\_n}=4$) | Delta |
+|:---|:---:|:---:|:---:|
+| **Collection Routing Accuracy** | 15 / 15 (100.0%) | **15 / 15 (100.0%)** | — |
+| **Chunk Retrieval Hit Rate** | 13 / 15 (86.7%) | **15 / 15 (100.0%)** | **+13.3%** |
+| **Grounded Answer Accuracy** | 13 / 15 (86.7%) | **15 / 15 (100.0%)** | **+13.3%** |
+
+* **Diagnostic Root-Cause Finding**: In baseline runs, two queries (`q10` on Apple regional performance and `q12` on Tesla delivery figures) missed because relevant chunks ranked between positions 11–16 in individual retrievers and were pruned before Reciprocal Rank Fusion.
+* **Engineering Fix**: Expanding the per-retriever candidate pool from $k=10$ to $k=20$ before RRF and widening the FlashRank cross-encoder output window from $\text{top\_n}=3$ to $\text{top\_n}=4$ (~1,200 words) eliminated boundary truncation and raised precision to **100%**.
+* Full diagnostic details are documented in [`evaluation/report.md`](evaluation/report.md).
+
+```bash
+# Run the deterministic RAG evaluation benchmark
+uv run python -m evaluation.evaluate
+```
 
 ---
 
-## Installation
+## Getting Started & Installation
 
-### 1. Clone the repository
+### Prerequisites
+* **Python 3.12+**
+* **[uv](https://docs.astral.sh/uv/)** (recommended for fast, deterministic lockfile installs) or standard `pip`
+* **API Keys**:
+  * [Groq Cloud API Key](https://console.groq.com/) (Free tier; powers ultra-fast LLM inference)
+  * [Tavily Search API Key](https://tavily.com/) (Free tier includes 1,000 searches/month)
+  * *(Optional)* [LangSmith API Key](https://smith.langchain.com/) (For distributed agent tracing)
+
+### 1. Clone the Repository
 ```bash
 git clone https://github.com/sugam24/STOCKSAGE.git
 cd STOCKSAGE
 ```
 
-### 2. Install dependencies
-Using **uv** (recommended):
+### 2. Install Dependencies
+Using **`uv`** (recommended):
 ```bash
 uv sync --all-groups
 ```
-*Or using standard pip and virtual environment:*
+Or using standard `venv` + `pip`:
 ```bash
 python3 -m venv .venv
-source .venv/bin/activate       # On Linux/macOS
-# .venv\Scripts\activate        # On Windows
-pip install -e ".[dev]"
+source .venv/bin/activate
+pip install -r requirements.txt
+pip install pytest
 ```
 
 ### 3. Configure Environment Variables
-Copy `.env.example` to create your local `.env` file:
 ```bash
 cp .env.example .env
 ```
-Fill in your credentials:
+Populate `.env` with your keys:
 ```env
 GROQ_API_KEY=gsk_your_groq_api_key_here
 TAVILY_API_KEY=tvly-your_tavily_api_key_here
-
-# Optional: LangSmith Tracing
-LANGCHAIN_TRACING_V2=false
-LANGCHAIN_API_KEY=lsv2_pt_...
-LANGCHAIN_PROJECT=stocksage
-
-# Optional: API Authentication
 STOCKSAGE_API_KEY=stocksage-dev-key-12345
+SEC_USER_AGENT="StockSage Research your_email@example.com"
+
+# Optional: LangSmith Observability
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=lsv2_pt_your_langsmith_key
+LANGCHAIN_PROJECT=stocksage
+```
+
+### 4. Run Pre-Flight Health Diagnostics
+Verify your Python environment, API keys, SEC EDGAR connectivity, ChromaDB permissions, and local ML models before launching:
+```bash
+uv run python check_health.py
 ```
 
 ---
 
-## Quickstart: Running StockSage
+## Running StockSage (UI, API, Docker, CLI)
 
-### 1. Streamlit Web Dashboard
-Launch the interactive web UI featuring real-time financial metrics, Plotly price candlestick charts, and multi-agent report generation:
-
-```bash
-uv run streamlit run demo/app.py
-```
-*Open your browser at `http://localhost:8501`.*
-
-### 2. FastAPI Backend & Swagger Docs
-Launch the high-performance async REST & WebSocket backend:
-
-```bash
-uv run python -m src.api.main
-# or via uvicorn directly:
-uv run uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
-```
-*Explore the interactive OpenAPI documentation at `http://localhost:8000/docs`.*
-
-### 3. Docker Compose (Full Stack)
-Build and spin up both the FastAPI backend and Streamlit frontend in isolated, production-grade containers:
-
+### 1. Full Stack via Docker Compose (Recommended)
+Spin up both the FastAPI backend (`:8000`) and Streamlit dashboard (`:8501`) in isolated containers with persistent volume mounts:
 ```bash
 docker compose up --build
 ```
-* Access FastAPI Backend: `http://localhost:8000`
-* Access Streamlit Dashboard: `http://localhost:8501`
+* **Streamlit Web UI**: `http://localhost:8501`
+* **FastAPI Swagger Docs**: `http://localhost:8000/docs`
 
-### 4. Multi-Agent CLI Pipeline
-Run the multi-agent StateGraph directly in your terminal:
-
+### 2. Run Locally (FastAPI Backend + Streamlit Frontend)
+Start the FastAPI server in Terminal 1:
 ```bash
-# Analyze a single equity through the complete multi-agent workflow
-uv run python -m src.graph.stocksage_graph NVDA
-
-# Analyze a portfolio of equities
-uv run python -m src.graph.stocksage_graph --portfolio NVDA,AAPL,MSFT
+uv run uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
+```
+Launch the interactive Streamlit dashboard in Terminal 2:
+```bash
+uv run streamlit run demo/app.py
 ```
 
-### 5. News RAG Agent
-Run the standalone hybrid RAG agent over live news and SEC EDGAR filings:
-
+### 3. Run the Multi-Agent Graph from CLI
+Execute a full multi-agent equity analysis (or targeted query) directly in your terminal:
 ```bash
-# Analyze a single ticker
-uv run python -m src.rag.news_agent NVDA
+# Full multi-agent institutional analysis
+uv run python -m src.graph.stocksage_graph "Provide a comprehensive research report on NVDA"
 
-# Run across all primary benchmark equities (NVDA, AAPL, TSLA)
-uv run python -m src.rag.news_agent --all
+# Targeted fast-route query (Supervisor automatically skips News & Risk agents)
+uv run python -m src.graph.stocksage_graph "What is AAPL's current price and RSI?"
+```
+
+### 4. Run Multi-Ticker Portfolio Risk & Correlation Analysis
+Analyze a portfolio of stocks concurrently with pairwise Pearson return correlations:
+```bash
+uv run python -m src.graph.portfolio AAPL MSFT NVDA
 ```
 
 ---
 
-## Evaluation & Benchmarking (Days 27–29)
+## Automated Test Suite & Continuous Integration
 
-To ensure StockSage delivers verifiable institutional accuracy, the retrieval pipeline is continuously benchmarked against a hand-curated dataset of 15 golden questions across 3 major public equities (`NVDA`, `AAPL`, `TSLA`).
-
-```bash
-# Run the automated golden dataset benchmark
-uv run python -m evaluation.evaluate
-```
-
-### Benchmark Results Progression
-
-```
-Day 28 Baseline:  [██████████████████████████░░░░]  13/15 Passed (86.7%)
-Day 29 Optimized: [██████████████████████████████]  15/15 Passed (100.0%)
-```
-
-* **Root-Cause Analysis & Fixes**:
-  * Candidate pool expanded from $k=10$ to $k=20$ before RRF.
-  * FlashRank neural rerank context window expanded to top-4 passages (~1,200 words), eliminating boundary cutoffs and achieving **100% precision**.
-* Full diagnostic documentation available in [`evaluation/report.md`](evaluation/report.md).
-
----
-
-## Test Suite & CI Pipeline
-
-StockSage maintains a comprehensive automated test suite with **114 offline unit tests** ensuring deterministic execution without requiring external API network calls.
+StockSage includes **22 modular test suites containing 114+ offline unit tests** across `tests/`. Every mathematical formula (Wilder's RSI, Annualized Volatility, Historical VaR 95%, Max Drawdown, Pearson Correlation, Reciprocal Rank Fusion) and every LangGraph edge transition (Supervisor routing, parallel fan-out, HITL interrupts, Critic self-correction loops, SQLite checkpoint recovery, graceful degradation) is verified deterministically without requiring live network calls.
 
 ```bash
-# Run all offline unit tests (114 passing tests)
+# Run the complete offline unit test suite (114+ passing tests)
 uv run pytest -v -m "not integration"
 
-# Run the API test suite
-uv run pytest tests/test_api.py -v
-
-# Run the multi-agent graph & agent test suites
-uv run pytest tests/test_agents.py tests/test_graph.py -v
-
-# Run the RAG component test suite
-uv run pytest tests/test_rag.py -v
+# Run specific architectural test suites
+uv run pytest tests/test_api.py -v                    # FastAPI endpoints, auth & HITL resume
+uv run pytest tests/test_risk_metrics.py -v           # Quantitative risk math verification
+uv run pytest tests/test_rag.py -v                    # Chunker, BM25 tokenizer & Hybrid RRF
+uv run pytest tests/test_critic.py tests/test_hitl.py # Reflexion loop & HITL gate tests
+uv run pytest tests/test_graceful_degradation.py -v   # Fault-tolerant partial report tests
 ```
 
-### Continuous Integration
-Every commit and pull request triggers our [GitHub Actions CI Pipeline](https://github.com/sugam24/STOCKSAGE/actions/workflows/ci.yml), which automatically:
-1. Provisions Python 3.12 in an isolated Linux runner.
-2. Installs `uv` and dependencies via lockfile resolution.
-3. Executes all 114 unit tests across schemas, mathematical indicators, agent routing, graph state transitions, and API endpoints.
-
----
-
-## Curriculum & Roadmap
-
-StockSage is structured as a 75-day progressive masterclass divided into 5 phases:
-
-```
-[Phase 1: Foundations] ➔ [Phase 2: RAG Engine] ➔ [Phase 3: Multi-Agent] ➔ [Phase 4: Deployment] ➔ [Phase 5: Production]
-      (Days 1–15)             (Days 16–30)            (Days 31–50)           (Days 51–65)           (Days 66–75)
-      ✅ COMPLETE             ✅ COMPLETE             ✅ COMPLETE            ✅ COMPLETE            🚀 IN PROGRESS
-```
-
-| Phase | Days | Focus Area | Status |
-|:---|:---:|:---|:---:|
-| **Phase 1: Foundations** | 1–15 | Groq LLM client, Pydantic validation, yfinance, technical analysis, Tavily search | ✅ **Complete** |
-| **Phase 2: RAG Architecture** | 16–30 | Embeddings, ChromaDB, chunking, BM25, hybrid search (RRF), FlashRank reranking, SEC EDGAR, golden benchmarks | ✅ **Complete** |
-| **Phase 3: Multi-Agent System** | 31–50 | LangGraph orchestration, Data Agent, News Agent, Risk Agent (VaR/Drawdown), Analyst Agent, Supervisor routing, Reflexion Critic, HITL gates, SQLite memory | ✅ **Complete** |
-| **Phase 4: Deployment & Full Stack** | 51–65 | FastAPI backend, WebSocket streaming, Streamlit dashboard, Plotly charts, Docker & Compose, CI/CD, LangSmith tracing | ✅ **Complete** |
-| **Phase 5: Production & Polish** | 66–75 | Cloud deployment (Railway / Render / Streamlit Cloud), latency/cost optimization, interview walkthroughs | 🚀 **In Progress (Days 66–68 Complete)** |
+Every push and pull request to `main` is automatically validated by the [GitHub Actions CI workflow](.github/workflows/ci.yml).
 
 ---
 
 ## Tech Stack
 
-| Component | Technology | Purpose |
+| Layer | Technology | Role in StockSage |
 |:---|:---|:---|
-| **Multi-Agent Orchestration** | [LangGraph](https://langchain-ai.github.io/langgraph/) | Deterministic state machine, parallel fan-out, HITL interrupts, and SQLite checkpointer |
-| **Web API Backend** | [FastAPI](https://fastapi.tiangolo.com/) | High-performance asynchronous REST & WebSocket server |
-| **Interactive UI** | [Streamlit](https://streamlit.io/) | Reactive web dashboard with live market controls and markdown report rendering |
-| **Data Visualizations** | [Plotly](https://plotly.com/python/) | Interactive financial candlestick and moving average charts |
-| **LLM Inference** | [Groq](https://groq.com/) | Sub-second inference (`llama-3.3-70b-versatile`, `openai/gpt-oss-120b`) |
-| **Dense Embeddings** | [Sentence-Transformers](https://sbert.net/) | Local semantic representations via `all-MiniLM-L6-v2` |
-| **Vector Database** | [ChromaDB](https://trychroma.com/) | Persistent local vector store with cosine distance |
-| **Sparse Keyword Search** | [rank-bm25](https://pypi.org/project/rank-bm25/) | Okapi BM25 exact lexical matching |
-| **Cross-Encoder Reranking** | [FlashRank](https://pypi.org/project/flashrank/) | Lightweight CPU cross-encoder (`ms-marco-TinyBERT-L-2-v2`) |
-| **Statutory Filings** | [SEC EDGAR API](https://efts.sec.gov/) | Official 10-Q & 10-K regulatory filings |
-| **Market Data Engine** | [yfinance](https://github.com/ranaroussi/yfinance) | Real-time equity fundamentals and historical OHLCV series |
-| **Containerization** | [Docker & Compose](https://www.docker.com/) | Multi-stage container builds and unified multi-service orchestration |
-| **Continuous Integration** | [GitHub Actions](https://github.com/features/actions) | Automated test execution on every commit |
-| **Observability & Tracing** | [LangSmith](https://smith.langchain.com/) | End-to-end multi-agent execution tracing and latency monitoring |
-| **Runtime & Tooling** | [Python 3.12+](https://www.python.org/) & [uv](https://docs.astral.sh/uv/) | Fast package management and modern asynchronous Python runtime |
+| **Multi-Agent Orchestration** | **LangGraph** & **LangChain** | Stateful graph execution, conditional routing, parallel fan-out, `interrupt()` HITL gates, and `SqliteSaver` checkpointing |
+| **LLM Inference** | **Groq Cloud API** | Ultra-low-latency inference (`llama-3.3-70b-versatile` / `openai/gpt-oss-120b`) with forced function calling & JSON mode |
+| **Hybrid Retrieval (RAG)** | **ChromaDB**, **Sentence-Transformers**, **rank-bm25**, **FlashRank** | Persistent cosine vector store, `all-MiniLM-L6-v2` embeddings, Okapi BM25 lexical search, RRF fusion, and `ms-marco-TinyBERT-L-2-v2` cross-encoder reranking |
+| **Financial Data & Filings** | **yfinance**, **SEC EDGAR REST API**, **Tavily API** | Live equity fundamentals, historical OHLCV bars, official 10-Q/10-K regulatory filings, and real-time financial news |
+| **Quantitative Computing** | **Pandas**, **NumPy**, **Python `math`** | Wilder's RSI-14, SMA-20/50, Annualized Volatility, 95% Historical VaR, Maximum Drawdown, and Pearson correlation matrices |
+| **Backend API** | **FastAPI**, **Uvicorn**, **WebSockets**, **Pydantic v2** | Async REST endpoints, background task workers, live WebSocket event streaming, and `X-API-Key` security |
+| **Frontend UI** | **Streamlit**, **Plotly**, **HTTPX** | Interactive equity dashboard, candlestick/trajectory charts, RSI gauges, and HITL approval controls |
+| **DevOps & Observability** | **Docker**, **Docker Compose**, **GitHub Actions**, **LangSmith**, **uv** | Containerized deployment, automated CI testing, distributed LLM trace telemetry, and deterministic dependency management |
 
 ---
 
 ## License
 
-This project is developed for educational and portfolio demonstration purposes. Open source under the MIT License.
-
+Released under the [MIT License](https://opensource.org/licenses/MIT).
