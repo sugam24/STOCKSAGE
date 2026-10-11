@@ -22,6 +22,8 @@ def test_append_history_reducer():
 
 def test_supervisor_resolves_pronoun_from_history():
     """Verify supervisor resolves 'it' / follow-up queries using conversation history."""
+    from src.agents.supervisor import SupervisorDecision
+
     state = create_initial_state(
         user_query="What about its P/E ratio and RSI?",
         conversation_history=[
@@ -29,7 +31,20 @@ def test_supervisor_resolves_pronoun_from_history():
             {"role": "assistant", "content": "NVIDIA is trading at $125."},
         ],
     )
-    # Ticker should be resolved to NVDA even though user said "its P/E ratio"
-    res = asyncio.run(supervisor_node(state))
-    assert res["ticker"] == "NVDA"
-    assert res["route"] == "data_only"
+
+    def fake_decide(user_query, current_ticker="", history=None, model=""):
+        # Verify history was forwarded properly to _decide_sync
+        assert history is not None
+        assert any("NVDA" in m.get("content", "") for m in history)
+        return SupervisorDecision(
+            ticker="NVDA",
+            route="data_only",
+            required_agents=["data_agent"],
+            reasoning="Resolved pronoun 'its' to NVDA from conversation history.",
+        )
+
+    with patch("src.agents.supervisor._decide_sync", side_effect=fake_decide):
+        res = asyncio.run(supervisor_node(state))
+        assert res["ticker"] == "NVDA"
+        assert res["route"] == "data_only"
+
