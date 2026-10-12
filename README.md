@@ -45,7 +45,7 @@ Standard Large Language Models fail at institutional equity research due to **st
 
 1. **Intent Classification & Conditional Routing**: A **Supervisor Agent** resolves multi-turn conversational context and dynamically routes queries—executing lightweight single-agent paths (`data_only` or `news_only` to save up to 75% in token compute) or triggering a full multi-agent deep-research workflow (`full_analysis`).
 2. **Parallel Fan-Out Ingestion**: The **Data Agent** (live market fundamentals & Wilder's RSI/SMA technical indicators) and **News & Filings Agent** (SEC EDGAR 10-Q/10-K filings + real-time financial news via Hybrid RAG) execute concurrently, cutting data collection latency by ~40%.
-3. **Deterministic Quantitative Risk Engine**: A dedicated **Risk Agent** computes Annualized Volatility, 95% Historical Value at Risk ($\text{VaR}_{95\%}$), Maximum Drawdown ($\text{MDD}$), and Beta directly from historical OHLCV price series—never delegating math to an LLM.
+3. **Deterministic Quantitative Risk Engine**: A dedicated **Risk Agent** computes Annualized Volatility, 95% Historical Value at Risk (VaR (95%)), Maximum Drawdown ($\text{MDD}$), and Beta directly from historical OHLCV price series—never delegating math to an LLM.
 4. **Human-in-the-Loop (HITL) Governance**: Integrates native LangGraph `interrupt()` checkpoints before synthesis, enabling analysts to inspect intermediate fundamentals, news snippets, and risk metrics to either approve synthesis or inject custom revision directives.
 5. **Reflexion Self-Correction Loop**: An **Analyst Agent** synthesizes all findings into a structured `StockReport`, which is immediately audited by an independent **Critic Node** against an editorial rubric (completeness, citation rigor, bull/bear balance). Reports scoring $< 4/5$ are automatically routed back with targeted feedback for revision.
 
@@ -141,7 +141,7 @@ flowchart LR
 * **Deterministic State Machine over Fragile Loops**: Replaces ad-hoc LLM loops with a strongly typed `StockSageState` schema, custom non-destructive concurrency reducers (`append_error`, `append_history`), and atomic SQLite checkpointing.
 * **Parallel Execution Fan-Out**: Runs `data_agent` (fundamentals & indicators) and `news_agent` (ChromaDB + Tavily + SEC EDGAR) concurrently in async tasks, slashing ingestion latency by ~40%.
 * **Hybrid RAG with Cross-Encoder Neural Reranking**: Combines semantic embeddings (`all-MiniLM-L6-v2`) and exact keyword matching (`rank-bm25`) through Reciprocal Rank Fusion ($k = 60$), followed by FlashRank cross-encoder reranking (`ms-marco-TinyBERT-L-2-v2`) to achieve **100% retrieval precision (15/15)** on our golden benchmark.
-* **From-Scratch Quantitative Financial Mathematics**: Implements Wilder's Smoothed RSI (14-period), SMA-20/SMA-50, Annualized Volatility ($\sigma_{\text{annual}} = \sigma_{\text{daily}} \times \sqrt{252}$), 95% Historical Value at Risk ($\text{VaR}_{95\%}$), Maximum Drawdown ($\text{MDD}$), and Multi-Asset Pearson Correlation Matrices directly in Python/NumPy/Pandas.
+* **From-Scratch Quantitative Financial Mathematics**: Implements Wilder's Smoothed RSI (14-period), SMA-20/SMA-50, Annualized Volatility ($\sigma\text{ (annual)} = \sigma\text{ (daily)} \times \sqrt{252}$), 95% Historical Value at Risk (VaR (95%)), Maximum Drawdown ($\text{MDD}$), and Multi-Asset Pearson Correlation Matrices directly in Python/NumPy/Pandas.
 * **Human-in-the-Loop (HITL) Governance**: Uses LangGraph's `interrupt()` primitive to pause execution before synthesis, allowing analysts to review intermediate metrics or inject revision instructions directly from the Streamlit UI or REST API.
 * **Reflexion Self-Correction & Critic Loop**: An independent Critic node grades draft reports on completeness, citation rigor, and quantitative precision. Any draft scoring $< 4/5$ is routed back to the Analyst node with structured revision feedback.
 * **Graceful Degradation Under API Outages**: Every node catches upstream failures, logs diagnostics to `state["error_log"]`, and marks missing fields cleanly so the Analyst Agent transparently discloses unavailable data streams rather than crashing.
@@ -191,7 +191,7 @@ Phase 2 constructs a multi-collection Retrieval-Augmented Generation (RAG) engin
 | **Task 26** | Multi-Collection Query Routing | [`src/rag/retriever.py`](src/rag/retriever.py) | `route_query()` intelligently directs timely queries to `news_chunks` and statutory queries to `filings` with confidence fallback (`0.35`). |
 | **Task 27** | Golden Evaluation Dataset | [`evaluation/golden_dataset.json`](evaluation/golden_dataset.json), [`evaluation/build_snapshot.py`](evaluation/build_snapshot.py), [`evaluation/corpus_snapshot.json`](evaluation/corpus_snapshot.json) | 15 ground-truth institutional questions and frozen deterministic corpus across `NVDA`, `AAPL`, and `TSLA`. |
 | **Task 28** | Automated RAG Evaluation | [`evaluation/evaluate.py`](evaluation/evaluate.py), [`evaluation/report.md`](evaluation/report.md) | Automated evaluation harness measuring baseline routing (100%) and retrieval precision (13/15, 86.7%). |
-| **Task 29** | Retrieval Diagnosis & Tuning | [`src/rag/pipeline.py`](src/rag/pipeline.py), [`evaluation/report.md`](evaluation/report.md) | Expanded candidate pool ($k: 10 \rightarrow 20$) and rerank window ($\text{top\_n}: 3 \rightarrow 4$), achieving **15/15 (100%)** retrieval and answer accuracy. |
+| **Task 29** | Retrieval Diagnosis & Tuning | [`src/rag/pipeline.py`](src/rag/pipeline.py), [`evaluation/report.md`](evaluation/report.md) | Expanded candidate pool ($k: 10 \rightarrow 20$) and rerank window (top_n: 3 → 4), achieving **15/15 (100%)** retrieval and answer accuracy. |
 | **Task 30** | Phase 2 News RAG Agent | [`src/rag/news_agent.py`](src/rag/news_agent.py), [`docs/phase2_notes.md`](docs/phase2_notes.md) | Standalone multi-ticker RAG research CLI agent and Phase 2 architectural retrospective. |
 
 ---
@@ -433,13 +433,13 @@ To ensure verifiable institutional accuracy, the retrieval pipeline is benchmark
 uv run python -m evaluation.evaluate
 ```
 
-| Metric | Task 28 Baseline ($k=10, \text{top\_n}=3$) | Task 29 Optimized ($k=20, \text{top\_n}=4$) | Improvement |
+| Metric | Task 28 Baseline ($k=10$, top_n = 3) | Task 29 Optimized ($k=20$, top_n = 4) | Improvement |
 |:---|:---:|:---:|:---:|
 | **Collection Routing Accuracy** | 15 / 15 (100.0%) | **15 / 15 (100.0%)** | — |
 | **Chunk Retrieval Hit Rate** | 13 / 15 (86.7%) | **15 / 15 (100.0%)** | **+13.3%** |
 | **Grounded Answer Accuracy** | 13 / 15 (86.7%) | **15 / 15 (100.0%)** | **+13.3%** |
 
-* **Root-Cause Diagnosis & Tuning**: Expanded per-retriever candidate depth from $k=10$ to $k=20$ prior to Reciprocal Rank Fusion and widened the FlashRank neural reranker cutoff from $\text{top\_n}=3$ to $\text{top\_n}=4$ (~1,200 words), eliminating boundary cutoffs and achieving **100% precision**. Full analysis in [`evaluation/report.md`](evaluation/report.md).
+* **Root-Cause Diagnosis & Tuning**: Expanded per-retriever candidate depth from $k=10$ to $k=20$ prior to Reciprocal Rank Fusion and widened the FlashRank neural reranker cutoff from `top_n=3` to `top_n=4` (~1,200 words), eliminating boundary cutoffs and achieving **100% precision**. Full analysis in [`evaluation/report.md`](evaluation/report.md).
 
 ---
 
